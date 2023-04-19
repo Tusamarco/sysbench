@@ -403,7 +403,7 @@ uint32_t sb_rand_varstr_alpha(char *buf, uint32_t min_len, uint32_t max_len) {
  */
 
 uint32_t sb_rand_continent(char *buf, uint32_t min_len) {
-    const char *continents[20][6];
+    const char continents[20][6];
     continents[0] = "Europe";
     continents[1] = "Asia";
     continents[2] = "North America";
