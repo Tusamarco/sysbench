@@ -403,7 +403,7 @@ uint32_t sb_rand_varstr_alpha(char *buf, uint32_t min_len, uint32_t max_len) {
  */
 
 uint32_t sb_rand_continent(char *buf, uint32_t min_len) {
-    char continents[6][20] ={"Europe","Asia","North America", "South America", "Africa","Australia"};
+    char continents[15][20] ={"Europe","Asia","North America", "South America", "Africa","Australia"};
  
     int key;
     key = rand() % min_len;   // no instantiation, just assignment, no overhead from sizeof
