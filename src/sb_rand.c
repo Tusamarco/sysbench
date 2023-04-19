@@ -402,7 +402,7 @@ uint32_t sb_rand_varstr_alpha(char *buf, uint32_t min_len, uint32_t max_len) {
  *A simple function to return a a continent name based on an array and the max index 
  */
 
-const char* sb_rand_continent(uint32_t min_len) {
+const char* sb_rand_continent(char *buf, uint32_t min_len) {
     const char *continents[6];
     continents[0] = "Europe";
     continents[1] = "Asia";
@@ -418,8 +418,9 @@ const char* sb_rand_continent(uint32_t min_len) {
 	{
 	   l = min_len;
 	}
-
-    return continents[l];
+    memset(buffer, 0, sizeof buffer);
+    strncpy(buffer, continents[l], sizeof buffer - 1);
+    return sizeof buffer;
 }
 
 /*
