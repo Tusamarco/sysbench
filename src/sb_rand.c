@@ -410,12 +410,13 @@ const char* sb_rand_continent(uint32_t min_len) {
     continents[3] = "South America";
     continents[4] = "Africa";
     continents[5] = "Australia";
-
+ 
+    int key;
     int l = (int) (min_len);
     key = rand() % l;   // no instantiation, just assignment, no overhead from sizeof
 	if (l > min_len)
 	{
-	   l = min_len
+	   l = min_len;
 	}
 
     return continents[l];
