@@ -34,6 +34,7 @@ uint32_t sb_rand_unique(void);
 void sb_rand_str(const char *, char *);
 void sb_rand_varstr(char *, uint32_t, uint32_t);
 void sb_rand_varstr_alpha(char *, uint32_t, uint32_t);
+void sb_rand_continent(char *, uint32_t, uint32_t);
 double sb_rand_uniform_double(void);
 ]]
 
