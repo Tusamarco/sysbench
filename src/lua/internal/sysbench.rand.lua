@@ -99,7 +99,8 @@ end
 function sysbench.rand.getcontinent(min_len)
    assert(min_len > 0)
    local buf = ffi.new("uint8_t[?]", 20)
-   return ffi.C.sb_rand_continent(buf, min_len)
+   local nchars = ffi.C.sb_rand_continent(buf, min_len)
+   return ffi.string(buf, nchars)   
 end
 
 function sysbench.rand.uniform_double()
