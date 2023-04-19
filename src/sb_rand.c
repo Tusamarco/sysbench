@@ -403,7 +403,7 @@ uint32_t sb_rand_varstr_alpha(char *buf, uint32_t min_len, uint32_t max_len) {
  */
 
 uint32_t sb_rand_continent(char *buf, uint32_t min_len) {
-    const char *continents[6];
+    const char *continents[20][6];
     continents[0] = "Europe";
     continents[1] = "Asia";
     continents[2] = "North America";
@@ -412,14 +412,13 @@ uint32_t sb_rand_continent(char *buf, uint32_t min_len) {
     continents[5] = "Australia";
  
     int key;
-    int l = (int) (min_len);
-    key = rand() % l;   // no instantiation, just assignment, no overhead from sizeof
-	if (l > min_len)
+    key = rand() % min_len;   // no instantiation, just assignment, no overhead from sizeof
+	if (key > min_len)
 	{
-	   l = min_len;
+	   key = min_len;
 	}
     memset(buf, 0, sizeof buf);
-    strncpy(buf, continents[l], sizeof buf - 1);
+    strncpy(buf, continents[key], sizeof buf - 1);
     return sizeof buf;
 }
 
