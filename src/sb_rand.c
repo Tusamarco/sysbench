@@ -412,7 +412,7 @@ uint32_t sb_rand_continent(char *buf, uint32_t min_len) {
 	   key = min_len;
 	}
     memset(buf, 0, sizeof buf);
-    strncpy(buf, continents[key], sizeof buf - 1);
+    strncpy(buf, continents[key], sizeof continents[key] - 1);
     return sizeof buf;
 }
 
