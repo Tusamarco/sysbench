@@ -96,7 +96,7 @@ function sysbench.rand.varstringalpha(min_len, max_len)
    return ffi.string(buf, nchars)
 end
 
-function sysbench.rand.getcontinent(min_len)
+function sysbench.rand.continent(min_len)
    assert(min_len > 0)
    local buf = ffi.new("uint8_t[?]", 20)
    local nchars = ffi.C.sb_rand_continent(buf, min_len)
