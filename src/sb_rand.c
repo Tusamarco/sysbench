@@ -418,9 +418,9 @@ const char* sb_rand_continent(char *buf, uint32_t min_len) {
 	{
 	   l = min_len;
 	}
-    memset(buffer, 0, sizeof buffer);
-    strncpy(buffer, continents[l], sizeof buffer - 1);
-    return sizeof buffer;
+    memset(buf, 0, sizeof buf);
+    strncpy(buf, continents[l], sizeof buf - 1);
+    return sizeof buf;
 }
 
 /*
