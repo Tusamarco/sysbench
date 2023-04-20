@@ -290,7 +290,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype
                                )
       end
-      print("DEBUG :" .. continent)
+     -- print("DEBUG :" .. continent)
       con:bulk_insert_next(query)
    end
 
