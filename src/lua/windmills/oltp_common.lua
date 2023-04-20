@@ -312,19 +312,19 @@ end
 local t = sysbench.sql.type
 local stmt_defs = {
    point_selects = {
-      "SELECT id, millid, date,active,kwatts_s FROM %s%u WHERE id=?",
+      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id=?",
       t.INT},
    simple_ranges = {
-      "SELECT id, millid, date,active,kwatts_s FROM %s%u WHERE id BETWEEN ? AND ?",
+      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id BETWEEN ? AND ?",
       t.INT, t.INT},
    sum_ranges = {
       "SELECT SUM(kwatts_s) FROM %s%u WHERE id BETWEEN ? AND ?  and active=1",
         t.INT, t.INT},
    order_ranges = {
-      "SELECT id, millid, date,active,kwatts_s  FROM %s%u WHERE id BETWEEN ? AND ? ORDER BY millid",
+      "SELECT id, millid, date,continent,active,kwatts_s  FROM %s%u WHERE id BETWEEN ? AND ? ORDER BY millid",
        t.INT, t.INT},
    distinct_ranges = {
-      "SELECT DISTINCT millid,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? AND active =1 ORDER BY millid",
+      "SELECT DISTINCT millid,continent,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? AND active =1 ORDER BY millid",
       t.INT, t.INT},
    index_updates = {
       "UPDATE %s%u SET active=? WHERE id=?",
@@ -354,7 +354,7 @@ function prepare_for_each_table(key)
 
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
-
+print("DEBUG: " .. stmt[t][key])
       local nparam = #stmt_defs[key] - 1
 
       if nparam > 0 then
