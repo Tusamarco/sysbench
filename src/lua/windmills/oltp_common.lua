@@ -354,7 +354,8 @@ function prepare_for_each_table(key)
 
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
-print("DEBUG: " .. stmt[t][key])
+-- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t)
+
       local nparam = #stmt_defs[key] - 1
 
       if nparam > 0 then
