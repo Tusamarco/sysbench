@@ -260,7 +260,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       c_val = get_c_value()
       strrecordtype =  sysbench.rand.string("@@@")
       location =sysbench.rand.varstringalpha(5, 50)
-      continent =sysbench.rand.continent(6)
+      continent =sysbench.rand.continent(7)
       active = sysbench.rand.default(0,1)
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
@@ -313,32 +313,32 @@ end
 local t = sysbench.sql.type
 local stmt_defs = {
    point_selects = {
-      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id=?",
-      t.INT},
+      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id=? AND continent='?'",
+      t.INT,{t.VARCHAR, 50}},
    simple_ranges = {
-      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id BETWEEN ? AND ?",
-      t.INT, t.INT},
+      "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id BETWEEN ? AND ? AND continent='?'",
+      t.INT, t.INT,{t.VARCHAR, 50}},
    sum_ranges = {
-      "SELECT SUM(kwatts_s) FROM %s%u WHERE id BETWEEN ? AND ?  and active=1",
-        t.INT, t.INT},
+      "SELECT SUM(kwatts_s) FROM %s%u WHERE id BETWEEN ? AND ?  and active=1  AND continent='?'",
+        t.INT, t.INT,{t.VARCHAR, 50}},
    order_ranges = {
-      "SELECT id, millid, date,continent,active,kwatts_s  FROM %s%u WHERE id BETWEEN ? AND ? ORDER BY millid",
-       t.INT, t.INT},
+      "SELECT id, millid, date,continent,active,kwatts_s  FROM %s%u WHERE id BETWEEN ? AND ?  AND continent='?' ORDER BY millid",
+       t.INT, t.INT,{t.VARCHAR, 50}},
    distinct_ranges = {
-      "SELECT DISTINCT millid,continent,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? AND active =1 ORDER BY millid",
-      t.INT, t.INT},
+      "SELECT DISTINCT millid,continent,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? AND active =1  AND continent='?' ORDER BY millid",
+      t.INT, t.INT,{t.VARCHAR, 50}},
    index_updates = {
-      "UPDATE %s%u SET active=? WHERE id=?",
-      t.INT,t.INT},
+      "UPDATE %s%u SET active=? WHERE id=?  AND continent='?'",
+      t.INT,t.INT,{t.VARCHAR, 50}},
    non_index_updates = {
-      "UPDATE %s%u SET strrecordtype=? WHERE id=?",
-       {t.CHAR,3},t.INT},
+      "UPDATE %s%u SET strrecordtype=? WHERE id=?  AND continent='?'",
+       {t.CHAR,3},t.INT,{t.VARCHAR, 50}},
    deletes = {
-      "DELETE FROM %s%u WHERE id=?",
-      t.INT},
+      "DELETE FROM %s%u WHERE id=?  AND continent='?'",
+      t.INT,{t.VARCHAR, 50}},
    inserts = {
-      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
-      t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
+      "INSERT INTO %s%u /* continent=? */ (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      {t.VARCHAR, 50}, t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
   
 }
 
@@ -355,7 +355,7 @@ function prepare_for_each_table(key)
 
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
--- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t)
+ print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t)
 
       local nparam = #stmt_defs[key] - 1
 
@@ -562,7 +562,7 @@ function execute_delete_inserts()
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
       location =sysbench.rand.varstringalpha(5, 50)
-      continent =sysbench.rand.continent(6)
+      continent =sysbench.rand.continent(7)
       active = sysbench.rand.default(0,1)
       strrecordtype =  sysbench.rand.varstringalpha(3, 3)
       
