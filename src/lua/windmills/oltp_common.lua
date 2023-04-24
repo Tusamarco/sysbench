@@ -331,13 +331,13 @@ local stmt_defs = {
       "UPDATE %s%u SET active=? WHERE id=?  AND continent=?",
       t.INT,t.INT,{t.VARCHAR, 50}},
    non_index_updates = {
-      "UPDATE %s%u SET strrecordtype=? WHERE id=?  AND continent=?",
+       "UPDATE %s%u SET strrecordtype=? WHERE id=?  AND continent='%s'",
        {t.CHAR,3},t.INT,{t.VARCHAR, 50}},
    deletes = {
       "DELETE FROM %s%u WHERE id=?  AND continent='?'",
       t.INT,{t.VARCHAR, 50}},
    inserts = {
-      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?,?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      "INSERT INTO %s%u /* continent=%s */ (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?,?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
       t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
   
 }
@@ -352,9 +352,10 @@ end
 
 function prepare_for_each_table(key)
    for t = 1, sysbench.opt.tables do
-
+      
+      local continent =sysbench.rand.continent(7)
    
-      stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
+      stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
  print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
 
       local nparam = #stmt_defs[key] - 1
