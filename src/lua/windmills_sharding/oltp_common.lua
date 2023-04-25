@@ -199,10 +199,10 @@ function create_table(drv, con, table_num)
    
    --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
    
-   con:query(string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num))
+   con:query(string.format([[TRUVCATE TABLE %s%d]],sysbench.opt.table_name, table_num))
    
    query = string.format([[   
-   CREATE TABLE `%s%d` (
+   CREATE TABLE IF NOT EXISTS `%s%d` (
   `id` %s,
   `uuid` char(36) NOT NULL,
   `millid` smallint(6) NOT NULL,
@@ -231,7 +231,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    end
 
    if sysbench.opt.auto_inc then
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    else
       query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    end
@@ -268,7 +268,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
-         query = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s') /*  continent=%s */ ",
                                uuid,
                                millid,
                                kwatts_s,
@@ -276,10 +276,11 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                location,
                                continent,
                                active,
-                               strrecordtype
+                               strrecordtype,
+                               continent
                                )
       else
-         query = string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')/*  continent=%s */ ",
                                i,
                                uuid,
                                millid,
@@ -288,10 +289,11 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                location,
                                continent,
                                active,
-                               strrecordtype
+                               strrecordtype,
+                               continent
                                )
       end
-     -- print("DEBUG :" .. continent)
+      print("DEBUG :" .. query)
       con:bulk_insert_next(query)
    end
 
