@@ -199,7 +199,7 @@ function create_table(drv, con, table_num)
    
    --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
    
-   query = string.format([[TRUNCATE TABLE %s%d]],sysbench.opt.table_name, table_num)
+   query = string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num)
    
    print("DEBUG 0:" .. query)
     
@@ -235,9 +235,9 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    end
 
    if sysbench.opt.auto_inc then
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query1 = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    else
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query1 = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    end
 
 --   con:bulk_insert_init(query)
@@ -269,13 +269,13 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
       
-      query = string.format(query,continent)
+      query1 = string.format(query1,continent)
       
-      print("DEBUG a: " .. query)
+      print("DEBUG a: " .. query1)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
-         query = query .. string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = query1 .. string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                uuid,
                                millid,
                                kwatts_s,
@@ -286,7 +286,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype
                                )
       else
-         query = query .. string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = query1 .. string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                i,
                                uuid,
                                millid,
@@ -301,6 +301,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       print("DEBUG b: " .. query)
 --      con:bulk_insert_next(query)
       con:query(query)
+      query = ""
    end
 
 --   con:bulk_insert_done()
