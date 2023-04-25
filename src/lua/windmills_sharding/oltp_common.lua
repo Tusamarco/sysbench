@@ -199,7 +199,11 @@ function create_table(drv, con, table_num)
    
    --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
    
-   con:query(string.format([[TRUNCATE TABLE %s%d]],sysbench.opt.table_name, table_num))
+   query = string.format([[TRUNCATE TABLE %s%d]],sysbench.opt.table_name, table_num)
+   
+   print("DEBUG 0:" .. query)
+    
+   con:query(query)
    
    query = string.format([[   
    CREATE TABLE IF NOT EXISTS `%s%d` (
@@ -266,6 +270,8 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       kwatts_s = sysbench.rand.default(0,4000000)
       
       query = string.format(query,continent)
+      
+      print("DEBUG a: " .. query)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
@@ -292,7 +298,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype                               
                                )
       end
-print("DEBUG :" .. query)
+      print("DEBUG b: " .. query)
 --      con:bulk_insert_next(query)
       con:query(query)
    end
