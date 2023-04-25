@@ -269,7 +269,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       
       query = string.format(query1,continent)
       
-      print("DEBUG a: " .. query)
+--      print("DEBUG a: " .. query)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
@@ -296,7 +296,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype                               
                                )
       end
-      print("DEBUG b: " .. query)
+--     print("DEBUG b: " .. query)
 --      con:bulk_insert_next(query)
       con:query(query)
       query = ""
@@ -364,7 +364,7 @@ function prepare_for_each_table(key)
       local continent =sysbench.rand.continent(7)
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
+-- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
 
       local nparam = #stmt_defs[key] - 1
 
