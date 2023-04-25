@@ -19,7 +19,7 @@
 -- Read/Write OLTP benchmark
 -- ----------------------------------------------------------------------
 
-require("windmills/oltp_common")
+require("windmills_sharding/oltp_common")
 
 function prepare_statements()
    if not sysbench.opt.skip_trx then
