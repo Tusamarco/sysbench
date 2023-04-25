@@ -256,7 +256,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    local strrecordtype = "@@@"
    
 --sysbench.opt.table_size
-   con:bulk_insert_init(query)
+--   con:bulk_insert_init(query)
 
 
    for i = 1, sysbench.opt.table_size do
