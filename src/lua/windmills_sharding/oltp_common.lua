@@ -221,7 +221,7 @@ function create_table(drv, con, table_num)
 sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    
    
-   --print("DEBUG :" .. query)
+print("DEBUG :" .. query)
       
    con:query(query)
 
@@ -292,7 +292,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype                               
                                )
       end
-      print("DEBUG :" .. query)
+print("DEBUG :" .. query)
 --      con:bulk_insert_next(query)
       con:query(query)
    end
