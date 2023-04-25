@@ -267,13 +267,13 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
       
-      query1 = string.format(query1,continent)
+      query = string.format(query1,continent)
       
-      print("DEBUG a: " .. query1)
+      print("DEBUG a: " .. query)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
-         query = query1 .. string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = query .. string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                uuid,
                                millid,
                                kwatts_s,
@@ -284,7 +284,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                strrecordtype
                                )
       else
-         query = query1 .. string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
+         query = query .. string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                i,
                                uuid,
                                millid,
