@@ -199,7 +199,7 @@ function create_table(drv, con, table_num)
    
    --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
    
-   con:query(string.format([[TRUVCATE TABLE %s%d]],sysbench.opt.table_name, table_num))
+   con:query(string.format([[TRUNCATE TABLE %s%d]],sysbench.opt.table_name, table_num))
    
    query = string.format([[   
    CREATE TABLE IF NOT EXISTS `%s%d` (
@@ -233,10 +233,10 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    if sysbench.opt.auto_inc then
       query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    else
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. " /*  continent=%s */ (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    end
 
-   con:bulk_insert_init(query)
+--   con:bulk_insert_init(query)
 
    local c_val
    local pad_val
@@ -264,11 +264,12 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
       active = sysbench.rand.default(0,1)
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
- 
+      
+      query = string.format(query,continent)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
-         query = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s') /*  continent=%s */ ",
+         query = query .. string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                uuid,
                                millid,
                                kwatts_s,
@@ -276,11 +277,10 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                location,
                                continent,
                                active,
-                               strrecordtype,
-                               continent
+                               strrecordtype
                                )
       else
-         query = string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')/*  continent=%s */ ",
+         query = query .. string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                i,
                                uuid,
                                millid,
@@ -289,15 +289,15 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                                location,
                                continent,
                                active,
-                               strrecordtype,
-                               continent
+                               strrecordtype                               
                                )
       end
       print("DEBUG :" .. query)
-      con:bulk_insert_next(query)
+--      con:bulk_insert_next(query)
+      con:query(query)
    end
 
-   con:bulk_insert_done()
+--   con:bulk_insert_done()
 
    if sysbench.opt.create_secondary then
       print(string.format("Creating a secondary index on '%s%d'...",
