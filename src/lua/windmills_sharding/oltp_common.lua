@@ -256,8 +256,6 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    local strrecordtype = "@@@"
    
 --sysbench.opt.table_size
---   con:bulk_insert_init(query)
-
 
    for i = 1, sysbench.opt.table_size do
 
@@ -302,6 +300,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
 --      con:bulk_insert_next(query)
       con:query(query)
       query = ""
+      continent = ""
    end
 
 --   con:bulk_insert_done()
