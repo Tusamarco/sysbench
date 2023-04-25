@@ -356,7 +356,7 @@ function prepare_for_each_table(key)
       local continent =sysbench.rand.continent(7)
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
+ print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t,continent))
 
       local nparam = #stmt_defs[key] - 1
 
