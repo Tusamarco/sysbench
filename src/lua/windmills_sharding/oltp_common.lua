@@ -201,7 +201,7 @@ function create_table(drv, con, table_num)
    
    query = string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num)
    
-   print("DEBUG 0:" .. query)
+--   print("DEBUG 0:" .. query)
     
    con:query(query)
    
