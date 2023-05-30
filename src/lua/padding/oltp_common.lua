@@ -305,7 +305,7 @@ function create_table(drv, con, table_num)
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
         -- mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1
-         query = string.format("(%d, '%s', '%s',%d,'%s',%d,'%s',%d,'%s')",
+         query = string.format("(%d, %s, %s,%d,'%s',%d,'%s',%d,%s)",
                                mybig8,
                                mytimestamp4,
                                mydate8,
@@ -317,7 +317,7 @@ function create_table(drv, con, table_num)
                                myyear1
                                )
       else
-        query = string.format("(%d,%d, '%s', '%s',%d,'%s',%d,'%s',%d,'%s')",
+        query = string.format("(%d,%d, %s, %s,%d,'%s',%d,'%s',%d,%s)",
                                i,
                                mybig8,
                                mytimestamp4,
@@ -330,7 +330,7 @@ function create_table(drv, con, table_num)
                                myyear1
                                )
       end
-     -- print("DEBUG :" .. continent)
+--     print("DEBUG :" .. query )
       con:bulk_insert_next(query)
    end
 
@@ -370,7 +370,7 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, 'NOW()', 'NOW()', ?, '?', ?, '?', ?,'YEAR(NOW())') ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.VARCHAR, 8},t.SMALLINT,{t.VARCHAR, 7},t.MEDIUMINT, t.TINYINT},
+      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, '?', ?, '?', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.VARCHAR, 8},t.SMALLINT,{t.VARCHAR, 7},t.MEDIUMINT, t.TINYINT},
   
 }
 
