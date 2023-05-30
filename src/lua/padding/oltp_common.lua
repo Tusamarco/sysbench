@@ -352,7 +352,7 @@ local stmt_defs = {
       "SELECT mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1 FROM %s%u WHERE id BETWEEN ? AND ?",
       t.INT, t.INT},
    sum_ranges = {
-      "SELECT SUM(mysmall2) FROM %s%u WHERE id BETWEEN ? AND ?  and active=1",
+      "SELECT SUM(mysmall2) FROM %s%u WHERE id BETWEEN ? AND ?  and myyear1=now()",
         t.INT, t.INT},
    order_ranges = {
       "SELECT mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1  FROM %s%u WHERE id BETWEEN ? AND ? ORDER BY mytiny1",
