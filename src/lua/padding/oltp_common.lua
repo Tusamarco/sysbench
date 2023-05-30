@@ -296,10 +296,10 @@ function create_table(drv, con, table_num)
       c_val = get_c_value()
       mychar8 =  sysbench.rand.string("@@@@@@@@")
       myvarchar8 = sysbench.rand.string("@@@@@@@")
-      mybig8 = sysbench.rand.default(sysbench.rand.default(2,4294967295),2305843009213693951)
-      mytiny1 = sysbench.rand.default(sysbench.rand.default(2,4294967295),127)
-      mysmall2 = sysbench.rand.default(sysbench.rand.default(2,4294967295),32767)
-      mymedium3 = sysbench.rand.default(sysbench.rand.default(2,4294967295),8388607)
+      mybig8 = sysbench.rand.default(2,2305843009213693951)
+      mytiny1 = sysbench.rand.default(1,127)
+      mysmall2 = sysbench.rand.default(1,32767)
+      mymedium3 = sysbench.rand.default(1,8388607)
       
       
                                                                                                                                   
@@ -596,10 +596,10 @@ function execute_delete_inserts()
       c_val = get_c_value()
       mychar8 =  sysbench.rand.string("@@@@@@@@")
       myvarchar8 = sysbench.rand.string("@@@@@@@")
-      mybig8 = sysbench.rand.default(sysbench.rand.default(2,4294967295),2305843009213693951)
-      mytiny1 = sysbench.rand.default(sysbench.rand.default(2,4294967295),127)
-      mysmall2 = sysbench.rand.default(sysbench.rand.default(2,4294967295),32767)
-      mymedium3 = sysbench.rand.default(sysbench.rand.default(2,4294967295),8388607)
+      mybig8 = sysbench.rand.default(2,2305843009213693951)
+      mytiny1 = sysbench.rand.default(1,127)
+      mysmall2 = sysbench.rand.default(1,32767)
+      mymedium3 = sysbench.rand.default(1,8388607)
       
       mytimestamp4 = "NOW()"
       mydate8 = "NOW()"
