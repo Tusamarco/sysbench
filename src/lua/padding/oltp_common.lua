@@ -294,8 +294,8 @@ function create_table(drv, con, table_num)
    for i = 1, sysbench.opt.table_size do
 
       c_val = get_c_value()
-      mychar8 =  sysbench.rand.string("@@@@@@@@")
-      myvarchar8 = sysbench.rand.string("@@@@@@@")
+      mychar8 =  sysbench.rand.varstringalpha(8, 8)
+      myvarchar8 = sysbench.rand.varstringalpha(7, 7)
       mybig8 = sysbench.rand.default(2,2305843009213693951)
       mytiny1 = sysbench.rand.default(1,127)
       mysmall2 = sysbench.rand.default(1,32767)
@@ -364,13 +364,13 @@ local stmt_defs = {
       "UPDATE %s%u SET mysmall2=? WHERE id=?",
       t.INT,t.INT},
    non_index_updates = {
-      "UPDATE %s%u SET mychar8='?' WHERE id=?",
+      "UPDATE %s%u SET mychar8=? WHERE id=?",
        {t.CHAR,8},t.INT},
    deletes = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, '?', ?, '?', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.VARCHAR, 8},t.SMALLINT,{t.VARCHAR, 7},t.MEDIUMINT, t.TINYINT},
+      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?, ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.VARCHAR, 8},t.SMALLINT,{t.VARCHAR, 7},t.INT, t.TINYINT},
   
 }
 
@@ -594,8 +594,8 @@ function execute_delete_inserts()
   
       
       c_val = get_c_value()
-      mychar8 =  sysbench.rand.string("@@@@@@@@")
-      myvarchar8 = sysbench.rand.string("@@@@@@@")
+      mychar8 =  sysbench.rand.varstringalpha(8, 8)
+      myvarchar8 = sysbench.rand.varstringalpha(7, 7)
       mybig8 = sysbench.rand.default(2,2305843009213693951)
       mytiny1 = sysbench.rand.default(1,127)
       mysmall2 = sysbench.rand.default(1,32767)
@@ -614,7 +614,7 @@ function execute_delete_inserts()
       param[tnum].inserts[5]:set(mysmall2)
       param[tnum].inserts[6]:set(myvarchar8)
       param[tnum].inserts[7]:set(mymedium3)
-      param[tnum].inserts[8]:set(myyear1)
+      param[tnum].inserts[8]:set(mytiny1)
             
       
       stmt[tnum].deletes:execute()
