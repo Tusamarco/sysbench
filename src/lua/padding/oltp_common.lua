@@ -294,8 +294,8 @@ function create_table(drv, con, table_num)
    for i = 1, sysbench.opt.table_size do
 
       c_val = get_c_value()
-      mychar8 =  sysbench.rand.varstringalpha(8, 8)
-      myvarchar8 = sysbench.rand.varstringalpha(7, 7)
+      mychar8 =  "abcdefgh"  --sysbench.rand.varstringalpha(8, 8)
+      myvarchar8 = "abcdefg" --sysbench.rand.varstringalpha(7, 7)
       mybig8 = sysbench.rand.default(2,2305843009213693951)
       mytiny1 = sysbench.rand.default(1,127)
       mysmall2 = sysbench.rand.default(1,32767)
@@ -594,8 +594,8 @@ function execute_delete_inserts()
   
       
       c_val = get_c_value()
-      mychar8 =  sysbench.rand.varstringalpha(8, 8)
-      myvarchar8 = sysbench.rand.varstringalpha(7, 7)
+      mychar8 = "abcdefgh" -- sysbench.rand.varstringalpha(8, 8)
+      myvarchar8 = "abcdefg" -- sysbench.rand.varstringalpha(7, 7)
       mybig8 = sysbench.rand.default(2,2305843009213693951)
       mytiny1 = sysbench.rand.default(1,127)
       mysmall2 = sysbench.rand.default(1,32767)
