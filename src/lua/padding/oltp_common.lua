@@ -370,7 +370,9 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?, ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.CHAR, 8},t.SMALLINT,{t.CHAR, 7},t.INT, t.TINYINT},
+      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, 'abcdefgh', ?, 'abcdefg', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,t.SMALLINT,t.INT, t.TINYINT},
+      "REPLACE INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, 'abcdefgh', ?, 'abcdefg', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,t.SMALLINT,t.INT, t.TINYINT},
+
   
 }
 
@@ -610,11 +612,9 @@ function execute_delete_inserts()
       param[tnum].inserts[1]:set(id)
       param[tnum].inserts[2]:set(mybig8)
       param[tnum].inserts[3]:set(mytiny1)
-      param[tnum].inserts[4]:set(mychar8)
-      param[tnum].inserts[5]:set(mysmall2)
-      param[tnum].inserts[6]:set(myvarchar8)
-      param[tnum].inserts[7]:set(mymedium3)
-      param[tnum].inserts[8]:set(mytiny1)
+      param[tnum].inserts[4]:set(mysmall2)
+      param[tnum].inserts[5]:set(mymedium3)
+      param[tnum].inserts[6]:set(mytiny1)
             
       
       stmt[tnum].deletes:execute()
