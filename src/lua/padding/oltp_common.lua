@@ -280,9 +280,9 @@ function create_table(drv, con, table_num)
    local mytimestamp4 = "NOW()"
    local mydate8 = "NOW()"
    local mytiny1
-   local mychar8 = "@@@@@@@@"
+   local mychar8 = "abcdefgh"
    local mysmall2 
-   local myvarchar8 ="@@@@@@@"
+   local myvarchar8 ="abcdefg"
    local mymedium3
    local myyear1 = "YEAR(NOW())"   
    
@@ -370,7 +370,7 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?, ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.VARCHAR, 8},t.SMALLINT,{t.VARCHAR, 7},t.INT, t.TINYINT},
+      "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?, ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,{t.CHAR, 8},t.SMALLINT,{t.CHAR, 7},t.INT, t.TINYINT},
   
 }
 
