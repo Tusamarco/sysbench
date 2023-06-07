@@ -371,9 +371,6 @@ local stmt_defs = {
       t.INT},
    inserts = {
       "INSERT INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, 'abcdefgh', ?, 'abcdefg', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,t.SMALLINT,t.INT, t.TINYINT},
-      "REPLACE INTO %s%u (id,mybig8,mytimestamp4,mydate8,mytiny1,mychar8,mysmall2,myvarchar8,mymedium3,myyear1) VALUES (?, ?, NOW(), NOW(), ?, 'abcdefgh', ?, 'abcdefg', ?,YEAR(NOW())) ON DUPLICATE KEY UPDATE mytiny1=?", t.INT,t.BIGINT, t.TINYINT,t.SMALLINT,t.INT, t.TINYINT},
-
-  
 }
 
 function prepare_begin()
