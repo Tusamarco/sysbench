@@ -364,7 +364,8 @@ local stmt_defs = {
       "UPDATE %s%u SET mysmall2=? WHERE id=?",
       t.INT,t.INT},
    non_index_updates = {
-      "UPDATE %s%u SET mychar8='abcdefgh' WHERE id=?",t.INT},
+      "UPDATE %s%u SET mychar8='abcdefgh' WHERE id=?",
+      t.INT},
    deletes = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
@@ -572,7 +573,7 @@ function execute_non_index_updates()
    local tnum = get_table_num()
     
    for i = 1, sysbench.opt.non_index_updates do
-      param[tnum].non_index_updates[1]:set(sysbench.rand.varstringalpha(3,3))
+--      param[tnum].non_index_updates[1]:set(sysbench.rand.varstringalpha(3,3))
       param[tnum].non_index_updates[2]:set(get_id())
 
       stmt[tnum].non_index_updates:execute()
