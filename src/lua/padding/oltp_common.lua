@@ -365,7 +365,7 @@ local stmt_defs = {
       t.INT,t.INT},
    non_index_updates = {
       "UPDATE %s%u SET mychar8=? WHERE id=?",
-       {t.CHAR,8},t.INT},
+       'abcdefgh',t.INT},
    deletes = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
