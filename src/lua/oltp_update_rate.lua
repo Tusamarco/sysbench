@@ -50,4 +50,6 @@ function event()
 
    stmt[tnum]:execute()
    sleep_stmt:execute() 
+   
+   check_reconnect()
 end

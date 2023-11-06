@@ -31,4 +31,6 @@ function event()
    param[tnum].index_updates[1]:set(get_id())
 
    stmt[tnum].index_updates:execute()
+   
+   check_reconnect()
 end

@@ -72,4 +72,6 @@ function event()
    end
 
    stmt[tnum]:execute()
+   
+   check_reconnect()
 end
