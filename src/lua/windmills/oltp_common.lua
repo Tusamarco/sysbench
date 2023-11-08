@@ -70,9 +70,9 @@ sysbench.cmdline.options = {
       {"Create a secondary index esin addition to the PRIMARY KEY", true},
    create_compound =
       {"Create compound indexes in addition to the PRIMARY KEY", true},
-   usereplace =
+   use_replace =
       {"Use replace instead Insert", false},
-   noprimarykey =
+   no_primary_key =
       {"We will not create an explicit primary key on the tables. Keep in mind INNODB will generate anyhow", false},
    reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
@@ -209,7 +209,7 @@ function create_table(drv, con, table_num)
    
    local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
    
-   if sysbench.opt.noprimarykey then
+   if sysbench.opt.no_primary_key and not sysbench.opt.auto_inc then
       primaryKeyDefinition = ""
    end
    
@@ -446,7 +446,7 @@ end
 
 function prepare_delete_inserts()
    prepare_for_each_table("deletes")
-   if sysbench.opts.usereplace then
+   if sysbench.opts.use_replace then
 	   prepare_for_each_table("replace")
 	else   
 	   prepare_for_each_table("inserts")
@@ -454,7 +454,7 @@ function prepare_delete_inserts()
 end
 
 function prepare_inserts()
-   if sysbench.opt.usereplace then
+   if sysbench.opt.use_replace then
 	   prepare_for_each_table("replace")
 	else   
 	   prepare_for_each_table("inserts")
@@ -613,7 +613,7 @@ function execute_delete_inserts()
       
       param[tnum].deletes[1]:set(id)
 
-      if not sysbench.opt.usereplace then
+      if not sysbench.opt.use_replace then
 	    param[tnum].inserts[1]:set(id)
     	param[tnum].inserts[2]:set(millid)
      	param[tnum].inserts[3]:set(kwatts_s)
@@ -632,7 +632,7 @@ function execute_delete_inserts()
       end
       
       stmt[tnum].deletes:execute()
-      if not sysbench.opt.usereplace then
+      if not sysbench.opt.use_replace then
 	     stmt[tnum].inserts:execute()
 	    else
 	    stmt[tnum].replace:execute()
@@ -657,7 +657,7 @@ function execute_inserts()
       active = sysbench.rand.default(0,1)
       strrecordtype =  sysbench.rand.varstringalpha(3, 3)
     
-      if not sysbench.opt.usereplace then
+      if not sysbench.opt.use_replace then
 	    param[tnum].inserts[1]:set(id)
     	param[tnum].inserts[2]:set(millid)
      	param[tnum].inserts[3]:set(kwatts_s)
@@ -675,7 +675,7 @@ function execute_inserts()
       	param[tnum].replace[7]:set(strrecordtype)
       end
       
-      if not sysbench.opt.usereplace then
+      if not sysbench.opt.use_replace then
 	     stmt[tnum].inserts:execute()
 	    else
 	    stmt[tnum].replace:execute()      
