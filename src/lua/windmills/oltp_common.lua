@@ -71,9 +71,8 @@ sysbench.cmdline.options = {
    create_compound =
       {"Create compound indexes in addition to the PRIMARY KEY", true},
    usereplace =
-      {"Use replace instead Insert", false}
-      
-  reconnect =
+      {"Use replace instead Insert", false},
+   reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
        0},      
    mysql_storage_engine =
