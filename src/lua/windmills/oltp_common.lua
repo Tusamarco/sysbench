@@ -71,7 +71,7 @@ sysbench.cmdline.options = {
    create_compound =
       {"Create compound indexes in addition to the PRIMARY KEY", true},
    usereplace =
-      {"Use replace instead Insert", false},
+      {"Use replace instead Insert", 0},
    reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
        0},      
@@ -332,7 +332,7 @@ local t = sysbench.sql.type
 local insertAction = "INSERT"
 local onDuplicateKeyAction = " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
 
-if (sysbench.cmdline.options.usereplace) then
+if sysbench.cmdline.options.usereplace == 1 then
     insertAction = "REPLACE"
     onDuplicateKeyAction =""
 end
