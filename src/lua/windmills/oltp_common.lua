@@ -447,7 +447,7 @@ function prepare_delete_inserts()
 end
 
 function prepare_inserts()
-   if sysbench.opts.usereplace then
+   if sysbench.opt.usereplace then
 	   prepare_for_each_table("replace")
 	else   
 	   prepare_for_each_table("inserts")
