@@ -67,7 +67,12 @@ sysbench.cmdline.options = {
    secondary =
       {"Use a secondary index in place of the PRIMARY KEY", false},
    create_secondary =
-      {"Create a secondary index in addition to the PRIMARY KEY", true},
+      {"Create a secondary index esin addition to the PRIMARY KEY", true},
+   create_compound =
+      {"Create compound indexes in addition to the PRIMARY KEY", true},
+   usereplace =
+      {"Use replace instead Insert", false}
+      
   reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
        0},      
@@ -214,8 +219,6 @@ function create_table(drv, con, table_num)
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `strrecordtype` char(3) COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `IDX_millid` (`millid`,`active`),
-  KEY `IDX_active` (`id`,`active`),
   KEY `kcontinent_x` (continent,id)
   ) %s ROW_FORMAT=DYNAMIC  %s]],
 sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
@@ -300,6 +303,7 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    if sysbench.opt.create_secondary then
       print(string.format("Creating a secondary index on '%s%d'...",
                           sysbench.opt.table_name,table_num))
+                        
       con:query(string.format("CREATE INDEX kuuid_x ON %s%d(uuid)",
                               sysbench.opt.table_name,table_num, table_num))
       con:query(string.format("CREATE INDEX millid_x ON %s%d(millid)",
@@ -308,9 +312,31 @@ sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
                               sysbench.opt.table_name,table_num, table_num))
                               
    end
+   if sysbench.opt.create_compound then
+      print(string.format("Creating a compound index on '%s%d'...",
+                          sysbench.opt.table_name,table_num))
+                          
+      con:query(string.format("CREATE INDEX IDX_millid ON %s%d(`millid`,`active`)",
+                              sysbench.opt.table_name,table_num, table_num))                    
+
+      con:query(string.format("CREATE INDEX IDX_active ON %s%d(`id`,`active`)",
+                              sysbench.opt.table_name,table_num, table_num))                    
+
+      con:query(string.format("CREATE INDEX kcontinent_x ON %s%d(`continent`,`id`)",
+                              sysbench.opt.table_name,table_num, table_num))                    
+
+   end
+
+
 end
 
 local t = sysbench.sql.type
+local insertAction = "INSERT"
+
+if sysbench.opt.usereplace then
+    insertAction = "REPLACE"
+end
+
 local stmt_defs = {
    point_selects = {
       "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id=?",
@@ -337,7 +363,7 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      insertAction .. " INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
       t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
   
 }

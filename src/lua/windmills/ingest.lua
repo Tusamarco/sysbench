@@ -24,6 +24,7 @@ require("windmills/oltp_common")
 -- Test specific options
 sysbench.cmdline.options.allinone =
    {"All traffic will go to one single table", false}
+   
 
 sysbench.cmdline.commands.prepare = {
    function ()
