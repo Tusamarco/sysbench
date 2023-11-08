@@ -330,9 +330,11 @@ end
 
 local t = sysbench.sql.type
 local insertAction = "INSERT"
+local onDuplicateKeyAction = " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
 
 if (sysbench.cmdline.options.usereplace) then
     insertAction = "REPLACE"
+    onDuplicateKeyAction =""
 end
 
 local stmt_defs = {
@@ -361,7 +363,7 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      insertAction .. " INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      insertAction .. " INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?)" .. onDuplicateKeyAction,
       t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
   
 }
