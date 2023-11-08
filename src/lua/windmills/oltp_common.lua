@@ -418,6 +418,12 @@ function prepare_delete_inserts()
    prepare_for_each_table("inserts")
 end
 
+function prepare_inserts()
+   prepare_for_each_table("inserts")
+end
+
+
+
 function thread_init()
    drv = sysbench.sql.driver()
    con = drv:connect()
@@ -578,6 +584,36 @@ function execute_delete_inserts()
       
       
       stmt[tnum].deletes:execute()
+      stmt[tnum].inserts:execute()
+   end
+end
+
+function execute_inserts()
+   local tnum = get_table_num()
+
+   for i = 1, sysbench.opt.delete_inserts do
+      local id = get_id()
+
+
+--      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,active,strrecordtyped) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?)",
+--      t.BIGINT, t.TINYINT, t.INT, {t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
+      
+      millid = sysbench.rand.default(1,400)
+      kwatts_s = sysbench.rand.default(0,4000000)
+      location =sysbench.rand.varstringalpha(5, 50)
+      continent =sysbench.rand.continent(6)
+      active = sysbench.rand.default(0,1)
+      strrecordtype =  sysbench.rand.varstringalpha(3, 3)
+    
+      param[tnum].inserts[1]:set(id)
+      param[tnum].inserts[2]:set(millid)
+      param[tnum].inserts[3]:set(kwatts_s)
+      param[tnum].inserts[4]:set(location)
+      param[tnum].inserts[5]:set(continent)
+      param[tnum].inserts[6]:set(active)
+      param[tnum].inserts[7]:set(strrecordtype)
+      
+    
       stmt[tnum].inserts:execute()
    end
 end
