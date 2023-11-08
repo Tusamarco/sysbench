@@ -217,8 +217,7 @@ function create_table(drv, con, table_num)
   `active` tinyint(2) NOT NULL DEFAULT '1',
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `strrecordtype` char(3) COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `kcontinent_x` (continent,id)
+  PRIMARY KEY (`id`)
   ) %s ROW_FORMAT=DYNAMIC  %s]],
 sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
    
@@ -332,7 +331,7 @@ end
 local t = sysbench.sql.type
 local insertAction = "INSERT"
 
-if sysbench.opt.usereplace then
+if (sysbench.cmdline.options.usereplace) then
     insertAction = "REPLACE"
 end
 
