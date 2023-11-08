@@ -72,6 +72,8 @@ sysbench.cmdline.options = {
       {"Create compound indexes in addition to the PRIMARY KEY", true},
    usereplace =
       {"Use replace instead Insert", false},
+   noprimarykey =
+      {"We will not create an explicit primary key on the tables. Keep in mind INNODB will generate anyhow", false},
    reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
        0},      
@@ -205,6 +207,12 @@ function create_table(drv, con, table_num)
    
    con:query(string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num))
    
+   local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
+   
+   if sysbench.opt.noprimarykey then
+      primaryKeyDefinition = ""
+   end
+   
    query = string.format([[   
    CREATE TABLE `%s%d` (
   `id` %s,
@@ -216,10 +224,9 @@ function create_table(drv, con, table_num)
   `continent` varchar(50) NOT NULL,
   `active` tinyint(2) NOT NULL DEFAULT '1',
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `strrecordtype` char(3) COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`id`)
+  `strrecordtype` char(3) COLLATE utf8_bin NOT NULL %s
   ) %s ROW_FORMAT=DYNAMIC  %s]],
-sysbench.opt.table_name, table_num, id_def, engine_def, extra_table_options)
+sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, extra_table_options)
    
    
    --print("DEBUG :" .. query)
