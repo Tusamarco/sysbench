@@ -71,7 +71,7 @@ sysbench.cmdline.options = {
    create_compound =
       {"Create compound indexes in addition to the PRIMARY KEY", true},
    usereplace =
-      {"Use replace instead Insert", 0},
+      {"Use replace instead Insert", false},
    reconnect =
       {"Reconnect after every N events. The default (0) is to not reconnect",
        0},      
@@ -332,11 +332,6 @@ local t = sysbench.sql.type
 local insertAction = "INSERT"
 local onDuplicateKeyAction = " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
 
-if sysbench.cmdline.options.usereplace == 1 then
-    insertAction = "REPLACE"
-    onDuplicateKeyAction =""
-end
-
 local stmt_defs = {
    point_selects = {
       "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id=?",
@@ -363,7 +358,10 @@ local stmt_defs = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
    inserts = {
-      insertAction .. " INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?)" .. onDuplicateKeyAction,
+      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
+   replace = {
+      "REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?)",
       t.BIGINT, t.TINYINT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
   
 }
@@ -441,11 +439,19 @@ end
 
 function prepare_delete_inserts()
    prepare_for_each_table("deletes")
-   prepare_for_each_table("inserts")
+   if sysbench.opts.usereplace then
+	   prepare_for_each_table("replace")
+	else   
+	   prepare_for_each_table("inserts")
+   end 
 end
 
 function prepare_inserts()
-   prepare_for_each_table("inserts")
+   if sysbench.opts.usereplace then
+	   prepare_for_each_table("replace")
+	else   
+	   prepare_for_each_table("inserts")
+   end 
 end
 
 
@@ -600,17 +606,30 @@ function execute_delete_inserts()
       
       param[tnum].deletes[1]:set(id)
 
-      param[tnum].inserts[1]:set(id)
-      param[tnum].inserts[2]:set(millid)
-      param[tnum].inserts[3]:set(kwatts_s)
-      param[tnum].inserts[4]:set(location)
-      param[tnum].inserts[5]:set(continent)
-      param[tnum].inserts[6]:set(active)
-      param[tnum].inserts[7]:set(strrecordtype)
-      
+      if not sysbench.opt.usereplace then
+	    param[tnum].inserts[1]:set(id)
+    	param[tnum].inserts[2]:set(millid)
+     	param[tnum].inserts[3]:set(kwatts_s)
+     	param[tnum].inserts[4]:set(location)
+      	param[tnum].inserts[5]:set(continent)
+      	param[tnum].inserts[6]:set(active)
+      	param[tnum].inserts[7]:set(strrecordtype)
+      else
+	    param[tnum].replace[1]:set(id)
+    	param[tnum].replace[2]:set(millid)
+     	param[tnum].replace[3]:set(kwatts_s)
+     	param[tnum].replace[4]:set(location)
+      	param[tnum].replace[5]:set(continent)
+      	param[tnum].replace[6]:set(active)
+      	param[tnum].replace[7]:set(strrecordtype)
+      end
       
       stmt[tnum].deletes:execute()
-      stmt[tnum].inserts:execute()
+      if not sysbench.opt.usereplace then
+	     stmt[tnum].inserts:execute()
+	    else
+	    stmt[tnum].replace:execute()
+	  end  
    end
 end
 
@@ -631,16 +650,30 @@ function execute_inserts()
       active = sysbench.rand.default(0,1)
       strrecordtype =  sysbench.rand.varstringalpha(3, 3)
     
-      param[tnum].inserts[1]:set(id)
-      param[tnum].inserts[2]:set(millid)
-      param[tnum].inserts[3]:set(kwatts_s)
-      param[tnum].inserts[4]:set(location)
-      param[tnum].inserts[5]:set(continent)
-      param[tnum].inserts[6]:set(active)
-      param[tnum].inserts[7]:set(strrecordtype)
+      if not sysbench.opt.usereplace then
+	    param[tnum].inserts[1]:set(id)
+    	param[tnum].inserts[2]:set(millid)
+     	param[tnum].inserts[3]:set(kwatts_s)
+     	param[tnum].inserts[4]:set(location)
+      	param[tnum].inserts[5]:set(continent)
+      	param[tnum].inserts[6]:set(active)
+      	param[tnum].inserts[7]:set(strrecordtype)
+      else
+	    param[tnum].replace[1]:set(id)
+    	param[tnum].replace[2]:set(millid)
+     	param[tnum].replace[3]:set(kwatts_s)
+     	param[tnum].replace[4]:set(location)
+      	param[tnum].replace[5]:set(continent)
+      	param[tnum].replace[6]:set(active)
+      	param[tnum].replace[7]:set(strrecordtype)
+      end
       
-    
-      stmt[tnum].inserts:execute()
+      if not sysbench.opt.usereplace then
+	     stmt[tnum].inserts:execute()
+	    else
+	    stmt[tnum].replace:execute()      
+      end    
+
    end
 end
 
