@@ -22,7 +22,7 @@
 require("windmills/oltp_common")
 
 -- Test specific options
-sysbench.cmdline.options.allinone =
+sysbench.cmdline.options.all_in_one =
    {"All traffic will go to one single table", false}
    
 
@@ -33,7 +33,7 @@ sysbench.cmdline.commands.prepare = {
       sysbench.opt.auto_inc=true
       
       -- if all on one is active then we only have 1 table for all the traffic
-      if ( sysbench.opt.allinone) then
+      if ( sysbench.opt.all_in_one) then
          sysbench.opt.tables=1
       end
       cmd_prepare()
@@ -54,7 +54,7 @@ end
 
 function event()
   -- if all on one is active then we only have 1 table for all the traffic
-   if ( sysbench.opt.allinone) then
+   if ( sysbench.opt.all_in_one) then
      sysbench.opt.tables=1
    end
  
