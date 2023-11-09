@@ -347,13 +347,13 @@ local stmt_defs = {
       "SELECT id, millid, date,continent,active,kwatts_s FROM %s%u WHERE id BETWEEN ? AND ?",
       t.INT, t.INT},
    sum_ranges = {
-      "SELECT SUM(kwatts_s) FROM %s%u WHERE id BETWEEN ? AND ?  and active=1",
+      "SELECT SUM(kwatts_s) FROM %s%u WHERE id BETWEEN ? AND ?",
         t.INT, t.INT},
    order_ranges = {
       "SELECT id, millid, date,continent,active,kwatts_s  FROM %s%u WHERE id BETWEEN ? AND ? ORDER BY millid",
        t.INT, t.INT},
    distinct_ranges = {
-      "SELECT DISTINCT millid,continent,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? AND active =1 ORDER BY millid",
+      "SELECT DISTINCT millid,continent,active,kwatts_s   FROM %s%u WHERE id BETWEEN ? AND ? ",
       t.INT, t.INT},
    index_updates = {
       "UPDATE %s%u SET active=? WHERE id=?",
