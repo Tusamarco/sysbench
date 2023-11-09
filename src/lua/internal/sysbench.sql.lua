@@ -381,7 +381,7 @@ function sql_param.set_rand_str_alpha(self, fmt)
    if btype == sql_type.CHAR or
       btype == sql_type.VARCHAR
    then
-      max_len = self.max_len
+      max_len = self.max_len + 1
       assert(min_len <= max_len)
       assert(max_len > 0)
       local buflen = max_len

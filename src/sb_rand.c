@@ -395,7 +395,7 @@ uint32_t sb_rand_varstr_alpha(char *buf, uint32_t min_len, uint32_t max_len) {
    
     int key;
     int l = (int) (sizeof(charset) -1);
-    for (n = 0;n <= num_chars;n++) {        
+    for (n = 0;n < num_chars;n++) {        
         key = rand() % l;   // no instantiation, just assignment, no overhead from sizeof
         buf[n] = charset[key];
     }
