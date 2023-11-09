@@ -19,7 +19,7 @@
 -- OLTP Point Select benchmark
 -- ----------------------------------------------------------------------
 
-require("oltp_common")
+require("windmills/oltp_common")
 
 function prepare_statements()
    -- use 1 query per event, rather than sysbench.opt.point_selects which

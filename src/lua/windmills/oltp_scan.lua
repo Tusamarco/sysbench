@@ -19,7 +19,7 @@
 -- Scans the table but filters all rows to avoid stressing client/server network
 -- ----------------------------------------------------------------------
 
-require("oltp_common")
+require("windmills/oltp_common")
 
 function prepare_statements()
    -- We do not use prepared statements here, but oltp_common.sh expects this

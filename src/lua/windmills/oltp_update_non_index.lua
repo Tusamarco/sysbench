@@ -19,7 +19,7 @@
 -- Update-Non-Index OLTP benchmark
 -- ----------------------------------------------------------------------
 
-require("oltp_common")
+require("windmills/oltp_common")
 
 function prepare_statements()
    prepare_non_index_updates()

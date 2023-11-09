@@ -19,7 +19,7 @@
 -- Read-Only OLTP benchmark
 -- ----------------------------------------------------------------------
 
-require("oltp_common")
+require("windmills/oltp_common")
 
 -- Test specific options
 sysbench.cmdline.options.type_of_range =

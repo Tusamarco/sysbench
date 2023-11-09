@@ -6,7 +6,7 @@
 -- http://kb.askmonty.org/v/segmented-key-cache
 --
 
-require("oltp_common")
+require("windmills/oltp_common")
 
 -- Test specific options
 sysbench.cmdline.options.random_points =
