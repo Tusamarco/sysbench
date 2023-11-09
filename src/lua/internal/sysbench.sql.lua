@@ -374,8 +374,8 @@ end
 function sql_param.set_rand_str_alpha(self, fmt)
    local sql_type = sysbench.sql.type
    local btype = self.type
-   local maxlen = 1
-   local minlen = 1
+   local max_len = 1
+   local min_len = 1
    self.is_null[0] = false
 
    if btype == sql_type.CHAR or

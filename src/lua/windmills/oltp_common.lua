@@ -383,7 +383,6 @@ end
 
 function prepare_for_each_table(key)
    for t = 1, sysbench.opt.tables do
-
    
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
 -- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t)
@@ -446,7 +445,7 @@ end
 
 function prepare_delete_inserts()
    prepare_for_each_table("deletes")
-   if sysbench.opts.use_replace then
+   if sysbench.opt.use_replace then
 	   prepare_for_each_table("replace")
 	else   
 	   prepare_for_each_table("inserts")
