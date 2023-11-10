@@ -386,11 +386,7 @@ function sql_param.set_rand_str_alpha(self, fmt)
       assert(max_len > 0)
       local buflen = max_len
       local buf = ffi.new("uint8_t[?]", buflen)
-      local nchars = ffi.C.sb_rand_varstr_alpha(buf, min_len, max_len)
-      local stringback = ffi.string(buf, nchars)
-      -- print("DEBUG |" .. stringback .. "|")
-      return stringback
-
+      local nchars = ffi.C.sb_rand_varstr_alpha(self.buffer, min_len, max_len)
    else
       error("Unsupported argument type: " .. btype, 2)
    end
