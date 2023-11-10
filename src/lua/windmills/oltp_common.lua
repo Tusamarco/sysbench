@@ -571,13 +571,13 @@ function execute_index_updates()
    local tnum = get_table_num()
 
    for i = 1, sysbench.opt.index_updates do
-      param[tnum].index_updates[1]:set(0)
+      param[tnum].index_updates[1]:set(sysbench.rand.default(0,1))
       param[tnum].index_updates[2]:set(get_id())
       stmt[tnum].index_updates:execute()
       
-      param[tnum].index_updates[1]:set(1)
-      param[tnum].index_updates[2]:set(get_id())
-      stmt[tnum].index_updates:execute()      
+--      param[tnum].index_updates[1]:set(1)
+--      param[tnum].index_updates[2]:set(get_id())
+--      stmt[tnum].index_updates:execute()      
       
    end
 end
