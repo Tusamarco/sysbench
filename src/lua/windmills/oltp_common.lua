@@ -608,7 +608,6 @@ function execute_delete_inserts()
       location =sysbench.rand.varstringalpha(5, 50)
       continent =sysbench.rand.continent(6)
       active = sysbench.rand.default(0,1)
-      strrecordtype =  sysbench.rand.varstringalpha(3, 3)
       
       param[tnum].deletes[1]:set(id)
 
@@ -619,7 +618,7 @@ function execute_delete_inserts()
      	param[tnum].inserts[4]:set(location)
       	param[tnum].inserts[5]:set(continent)
       	param[tnum].inserts[6]:set(active)
-      	param[tnum].inserts[7]:set(strrecordtype)
+      	param[tnum].inserts[7]:set_rand_str_alpha("")
       else
 	    param[tnum].replace[1]:set(id)
     	param[tnum].replace[2]:set(millid)
@@ -627,7 +626,7 @@ function execute_delete_inserts()
      	param[tnum].replace[4]:set(location)
       	param[tnum].replace[5]:set(continent)
       	param[tnum].replace[6]:set(active)
-      	param[tnum].replace[7]:set(strrecordtype)
+      	param[tnum].replace[7]:set_rand_str_alpha("")
       end
       
       stmt[tnum].deletes:execute()
@@ -654,8 +653,7 @@ function execute_inserts()
       location =sysbench.rand.varstringalpha(5, 50)
       continent =sysbench.rand.continent(6)
       active = sysbench.rand.default(0,1)
-      strrecordtype =  sysbench.rand.varstringalpha(3, 3)
-    
+          
       if not sysbench.opt.use_replace then
 	    param[tnum].inserts[1]:set(id)
     	param[tnum].inserts[2]:set(millid)
@@ -663,7 +661,7 @@ function execute_inserts()
      	param[tnum].inserts[4]:set(location)
       	param[tnum].inserts[5]:set(continent)
       	param[tnum].inserts[6]:set(active)
-      	param[tnum].inserts[7]:set(strrecordtype)
+      	param[tnum].inserts[7]:set_rand_str_alpha("")
       else
 	    param[tnum].replace[1]:set(id)
     	param[tnum].replace[2]:set(millid)
@@ -671,7 +669,7 @@ function execute_inserts()
      	param[tnum].replace[4]:set(location)
       	param[tnum].replace[5]:set(continent)
       	param[tnum].replace[6]:set(active)
-      	param[tnum].replace[7]:set(strrecordtype)
+      	param[tnum].replace[7]:set_rand_str_alpha("")
       end
       
       if not sysbench.opt.use_replace then
