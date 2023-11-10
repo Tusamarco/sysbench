@@ -359,8 +359,8 @@ local stmt_defs = {
       "UPDATE %s%u SET active=? WHERE id=?",
       t.INT,t.INT},
    non_index_updates = {
-      "UPDATE %s%u SET strrecordtype=? WHERE id=?",
-       {t.CHAR,3},t.INT},
+      "UPDATE %s%u SET location=? WHERE id=?",
+       {t.VARCHAR,50},t.INT},
    deletes = {
       "DELETE FROM %s%u WHERE id=?",
       t.INT},
