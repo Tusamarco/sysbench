@@ -36,7 +36,7 @@ function thread_init()
    local points = string.rep("?, ", sysbench.opt.random_points - 1) .. "?"
 
    for t = 1, sysbench.opt.tables do
-
+      
       stmt[t] = con:prepare(string.format([[
            UPDATE %s%d set location=?
            WHERE id IN (%s)
@@ -62,10 +62,7 @@ end
 function event()
    local tnum = sysbench.rand.uniform(1, sysbench.opt.tables)
 
-   local c_value_template = "###########-###########-###########-" ..
-      "###########-###########-###########-" ..
-      "###########-###########-###########-" ..
-      "###########"
+   local c_value_template = "@@@@@@@@@@@-@@@@@@@@@@@-@@@@@@@@@@@-@@@@@@@@@@@"
 
    params[tnum][1]:set_rand_str(c_value_template)
 
