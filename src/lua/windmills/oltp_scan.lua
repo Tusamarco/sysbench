@@ -21,6 +21,26 @@
 
 require("windmills/oltp_common")
 
+function thread_init()
+   drv = sysbench.sql.driver()
+   con = drv:connect()
+
+   stmt = {}
+   params = {}
+
+   for t = 1, sysbench.opt.tables do
+      stmt[t] = {}
+      params[t] = {}
+   end
+
+  if sysbench.opt.threads > sysbench.opt.tables then
+     	sysbench.opt.threads = (sysbench.opt.tables - 1) 
+  end
+
+
+end
+
+
 function prepare_statements()
    -- We do not use prepared statements here, but oltp_common.sh expects this
    -- function to be defined
