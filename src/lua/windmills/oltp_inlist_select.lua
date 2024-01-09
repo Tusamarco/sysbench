@@ -73,5 +73,5 @@ function event()
 
    stmt[tnum]:execute()
    
-   check_reconnect()
+   -- FUNCTION HERE IS NOT WORKING must control why !!! check_reconnect()
 end
