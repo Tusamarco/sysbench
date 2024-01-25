@@ -135,7 +135,7 @@ function cmd_warmup()
                    t, sysbench.opt.table_size))
       con:query(string.format(
                    "SELECT COUNT(*) FROM " ..
-                      "(SELECT * FROM %s WHERE k LIKE '%%0%%' LIMIT %u) t",
+                      "(SELECT * FROM %s WHERE kwatts_s LIKE '%%0%%' LIMIT %u) t",
                    t, sysbench.opt.table_size))
    end
 end
