@@ -43,9 +43,6 @@ end
 
 function event()
 
-
-   execute_point_selects()
-
    if sysbench.opt.range_selects then
       execute_simple_ranges()
       execute_sum_ranges()
@@ -56,11 +53,11 @@ function event()
    if not sysbench.opt.skip_trx then
       begin()
    end
+
    execute_index_updates()
-   execute_point_selects()
    execute_non_index_updates()
    execute_delete_inserts()
-   execute_simple_ranges()
+   execute_point_selects()
 
    if not sysbench.opt.skip_trx then
       commit()
