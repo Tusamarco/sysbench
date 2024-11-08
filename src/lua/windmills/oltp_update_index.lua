@@ -22,10 +22,23 @@
 require("windmills/oltp_common")
 
 function prepare_statements()
+   if not sysbench.opt.skip_trx then
+      prepare_begin()
+      prepare_commit()
+   end
+   
    prepare_index_updates()
 end
 
 function event()
+   if not sysbench.opt.skip_trx then
+      begin()
+   end
+   
    execute_index_updates(con)
+   if not sysbench.opt.skip_trx then
+     commit()
+   end
+   
    check_reconnect()
 end
