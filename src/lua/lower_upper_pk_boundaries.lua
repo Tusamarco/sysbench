@@ -34,15 +34,23 @@ function prepare()
     con:query("INSERT INTO brange1 VALUES (1, 1), (2, 2);")
 
     print("Filling table brange2")
-    local i = 0
+    
     local reporter = 0
-    local loop = (sysbench.opt.table_size / 6)
+    local loop = (sysbench.opt.table_size / 10)
+    
+    local globalid =0
     for r = 1, loop do
-        i = i + 1
-        con:query(string.format("INSERT INTO brange2 VALUES (2, %d),(2, %d),(2, %d),(2, %d),(2, %d),(2,%d);",
-        i, i + 1 , i + 2, i + 3, i + 4, i + 5  ))
-        i = i + 6
-        reporter = reporter + 1
+        local insert = "INSERT INTO brange2 VALUES "
+        for i = 1 , 10 do
+         if i > 1 then
+            insert = insert .. ","   
+         end
+         globalid = globalid + 1
+         insert = insert .. "(2," .. globalid  ..")"
+        end
+        con:query(insert .. ";")
+
+        reporter = (reporter + 1)
         if reporter >= 5000 then
             print(".... brange2 inserted records " .. (r * 6))
             reporter = 0
