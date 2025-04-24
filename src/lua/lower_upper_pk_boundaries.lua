@@ -52,7 +52,7 @@ function prepare()
 
         reporter = (reporter + 1)
         if reporter >= 5000 then
-            print(".... brange2 inserted records " .. (r * 6))
+            print(".... brange2 inserted records " .. (r * 10))
             reporter = 0
         end
     end
