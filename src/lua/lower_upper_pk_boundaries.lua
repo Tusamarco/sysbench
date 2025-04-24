@@ -1,8 +1,25 @@
 #!/usr/bin/env sysbench
 -- -------------------------------------------------------------------------- --
--- Bulk insert benchmark: do multi-row INSERTs concurrently in --threads
--- threads with each thread inserting into its own table. The number of INSERTs
--- executed by each thread is controlled by either --time or --events.
+-- This test is designed to check a specific bug and feature (see https://bugs.mysql.com/bug.php?id=112737)
+-- it works quering the primary key and giving the request for a specific range of records. 
+-- when the query is executed the bounderies must appear also in the explain plan 
+-- without the patch this doesn't happen as below:
+-- EXPLAIN FORMAT=TREE
+-- SELECT t1.b FROM t1 JOIN t2
+--   WHERE t1.a = t2.a AND t2.a = 2 AND t2.b >= t1.b AND t2.b <= t1.b+2;
+
+-- b<=4 was not added to RANGE SCAN
+-- +----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+-- | EXPLAIN                                                                                                                                                                                          |
+-- +----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+-- | -> Filter: ((t2.a = 2) and (t2.b >= '2') and (t2.b <= <cache>(('2' + 2))))  (cost=0.86 rows=3)
+--     -> Covering index range scan on t2 using PRIMARY over (a = 2 AND 2 <= b)  (cost=0.86 rows=3)
+--  |
+-- +----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+-- The test is required to run ONCE and with 1 thread
+-- possible difference is the number of rows in the table so it is good to load a decent ammount of data like more than 1 million rows. 
+
 -- -------------------------------------------------------------------------- --
 -- Command line options
 sysbench.cmdline.options = {
