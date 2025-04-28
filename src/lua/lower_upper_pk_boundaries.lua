@@ -25,7 +25,7 @@
 sysbench.cmdline.options = {
     stats_format=
     {"Specify how you want the statistics written [default=human readable; csv; json ", "human"},
-    table_size={"Specify the number of rows to be inserted", 2000000}
+    table_size={"Specify the number of rows to be inserted", 10000000}
 }
 
 function thread_init()
@@ -39,40 +39,46 @@ function prepare()
 
    
    
-   for i = 1, 2 do
-      print("Creating table 'brange" .. i .. "'...")
-      con:query(string.format([[
-        CREATE TABLE IF NOT EXISTS brange%d (
-          a INTEGER NOT NULL,
-          b INTEGER DEFAULT '0' NOT NULL,
-          PRIMARY KEY (a,b))]], i))
-    end
+  print("Creating table 'brange1...")
+  con:query(string.format([[
+    CREATE TABLE IF NOT EXISTS brange1 (
+      a INTEGER,
+      b INTEGER,
+      PRIMARY KEY (a))]]))
+
+  print("Creating table 'brange2...")
+  con:query(string.format([[
+    CREATE TABLE IF NOT EXISTS brange2 (
+      a INTEGER,
+      b INTEGER,
+      PRIMARY KEY (a,b))]]))
+
+
     print("Filling table brange1")
     con:query("INSERT INTO brange1 VALUES (1, 1), (2, 2);")
 
     print("Filling table brange2")
     
     local reporter = 0
-    local loop = (sysbench.opt.table_size / 10)
+    local loop = (sysbench.opt.table_size)
     
     local globalid =0
+    con:query("BEGIN;");
     for r = 1, loop do
         local insert = "INSERT INTO brange2 VALUES "
-        for i = 1 , 10 do
-         if i > 1 then
-            insert = insert .. ","   
-         end
          globalid = globalid + 1
          insert = insert .. "(2," .. globalid  ..")"
-        end
         con:query(insert .. ";")
 
         reporter = (reporter + 1)
-        if reporter >= 5000 then
-            print(".... brange2 inserted records " .. (r * 10))
+        if reporter >= 100000 then
+            con:query("COMMIT;");
+            con:query("BEGIN;");
+            print(".... brange2 inserted records " .. (r))
             reporter = 0
         end
     end
+    con:query("COMMIT;");
     con:query("analyze table brange2;")
 end
 
