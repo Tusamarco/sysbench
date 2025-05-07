@@ -66,6 +66,8 @@ function prepare()
     local batch_dimension = (sysbench.opt.batch_insert_dimension)
     local globalid =0
     
+    local start_time = os.time()
+
     if batch_dimension == 0 then
          con:query("BEGIN;");
          for r = 1, loop do
@@ -82,8 +84,7 @@ function prepare()
                   reporter = 0
             end
          end
-         con:query("COMMIT;");
-         con:query("analyze table brange2;")
+         con:query("COMMIT;")
       else
          local loop = (sysbench.opt.table_size / batch_dimension)
 
@@ -101,13 +102,15 @@ function prepare()
              con:query("COMMIT;");     
              reporter = (reporter + 1)
              print_progress_bar(globalid,sysbench.opt.table_size)
-             --  if reporter >= 500 then
-            --      print(".... brange2 inserted records " .. (r * 10))
-            --      reporter = 0
-            --  end
          end
-         con:query("analyze table brange2;")
       end
+
+      local elapsed_time = os.time() - start_time
+      print("Data load total time taken(sec): " .. elapsed_time)
+      print("Total records loaded: " .. sysbench.opt.table_size)
+      print("records/s: " .. (sysbench.opt.table_size/elapsed_time))
+      
+      con:query("analyze table brange2;")
 
 end
 
