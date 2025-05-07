@@ -25,7 +25,9 @@
 sysbench.cmdline.options = {
     stats_format=
     {"Specify how you want the statistics written [default=human readable; csv; json ", "human"},
-    table_size={"Specify the number of rows to be inserted", 10000000}
+    table_size={"Specify the number of rows to be inserted", 10000000},
+    batch_insert_dimension={"if use batching insert instead one for insert comamnd. Default of the dimension is 0, \
+    if a number is given that number will be used as dimension of the batch  ", 0},
 }
 
 function thread_init()
@@ -61,25 +63,52 @@ function prepare()
     
     local reporter = 0
     local loop = (sysbench.opt.table_size)
-    
+    local batch_dimension = (sysbench.opt.batch_insert_dimension)
     local globalid =0
-    con:query("BEGIN;");
-    for r = 1, loop do
-        local insert = "INSERT INTO brange2 VALUES "
-         globalid = globalid + 1
-         insert = insert .. "(2," .. globalid  ..")"
-        con:query(insert .. ";")
+    
+    if batch_dimension == 0 then
+         con:query("BEGIN;");
+         for r = 1, loop do
+            local insert = "INSERT INTO brange2 VALUES "
+               globalid = globalid + 1
+               insert = insert .. "(2," .. globalid  ..")"
+            con:query(insert .. ";")
 
-        reporter = (reporter + 1)
-        if reporter >= 100000 then
-            con:query("COMMIT;");
-            con:query("BEGIN;");
-            print(".... brange2 inserted records " .. (r))
-            reporter = 0
-        end
-    end
-    con:query("COMMIT;");
-    con:query("analyze table brange2;")
+            reporter = (reporter + 1)
+            if reporter >= 100000 then
+                  con:query("COMMIT;");
+                  con:query("BEGIN;");
+                  print(".... brange2 inserted records " .. (r))
+                  reporter = 0
+            end
+         end
+         con:query("COMMIT;");
+         con:query("analyze table brange2;")
+      else
+         local loop = (sysbench.opt.table_size / batch_dimension)
+
+         local globalid =0
+         for r = 1, loop do
+             local insert = "INSERT INTO brange2 VALUES "
+             for i = 1 , batch_dimension do
+                  if i > 1 then
+                     insert = insert .. ","   
+                  end
+                  globalid = globalid + 1
+                  insert = insert .. "(2," .. globalid  ..")"
+             end
+             con:query(insert .. ";")
+             con:query("COMMIT;");     
+             reporter = (reporter + 1)
+             print_progress_bar(globalid,sysbench.opt.table_size)
+             --  if reporter >= 500 then
+            --      print(".... brange2 inserted records " .. (r * 10))
+            --      reporter = 0
+            --  end
+         end
+         con:query("analyze table brange2;")
+      end
+
 end
 
 function event()
@@ -122,3 +151,22 @@ function sysbench.hooks.report_intermediate(stat)
     end
  end
  
+ function print_progress_bar(current, total, width)
+   width = width or 50 -- Default width if not provided
+   local percent = math.floor((current / total) * 100)
+   local filled = math.floor((current / total) * width)
+   
+   -- Build progress bar string
+   local bar = "["
+   for i = 1, filled do bar = bar .. "=" end
+   for i = filled + 1, width do bar = bar .. " " end
+   bar = bar .. "]"
+   
+   -- Print progress
+   io.write(string.format("\r%s %3d%%", bar, percent))
+   io.flush()
+   
+   if current == total then
+       print() -- Newline when complete
+   end
+end
