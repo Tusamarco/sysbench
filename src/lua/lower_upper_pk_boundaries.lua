@@ -28,6 +28,7 @@ sysbench.cmdline.options = {
     table_size={"Specify the number of rows to be inserted", 10000000},
     batch_insert_dimension={"if use batching insert instead one for insert comamnd. Default of the dimension is 0, \
     if a number is given that number will be used as dimension of the batch  ", 0},
+    use_transactions={"Encapsulate the operations inside an esplicti transaction with Begin/commit",0}
 }
 
 function thread_init()
@@ -63,13 +64,16 @@ function prepare()
     
     local reporter = 0
     local loop = (sysbench.opt.table_size)
+    local trx = (sysbench.opt.use_transactions)
     local batch_dimension = (sysbench.opt.batch_insert_dimension)
     local globalid =0
     
     local start_time = os.time()
 
     if batch_dimension == 0 then
-         con:query("BEGIN;");
+         if trx > 0 then
+            con:query("BEGIN;");
+         end
          for r = 1, loop do
             local insert = "INSERT INTO brange2 VALUES "
                globalid = globalid + 1
@@ -78,10 +82,12 @@ function prepare()
 
             reporter = (reporter + 1)
             if reporter >= 100000 then
+               if trx > 0 then
                   con:query("COMMIT;");
                   con:query("BEGIN;");
-                  print(".... brange2 inserted records " .. (r))
-                  reporter = 0
+               end
+               print_progress_bar(r,sysbench.opt.table_size)
+               reporter = 0
             end
          end
          con:query("COMMIT;")
@@ -91,6 +97,9 @@ function prepare()
          local globalid =0
          for r = 1, loop do
              local insert = "INSERT INTO brange2 VALUES "
+             if trx > 0 then
+               con:query("BEGIN;");     
+             end
              for i = 1 , batch_dimension do
                   if i > 1 then
                      insert = insert .. ","   
@@ -99,13 +108,17 @@ function prepare()
                   insert = insert .. "(2," .. globalid  ..")"
              end
              con:query(insert .. ";")
-             con:query("COMMIT;");     
+             if trx > 0 then
+               con:query("COMMIT;");     
+             end
              reporter = (reporter + 1)
              print_progress_bar(globalid,sysbench.opt.table_size)
          end
       end
 
       local elapsed_time = os.time() - start_time
+      print("Data batch size: " .. sysbench.opt.batch_insert_dimension)
+      print("Using transactions: " .. sysbench.opt.use_transactions)
       print("Data load total time taken(sec): " .. elapsed_time)
       print("Total records loaded: " .. sysbench.opt.table_size)
       print("records/s: " .. (sysbench.opt.table_size/elapsed_time))
