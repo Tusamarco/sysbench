@@ -93,9 +93,6 @@ sysbench.cmdline.options = {
    {"Specify how you want the statistics written [default=human readable; csv; json ", "human"},
    create_indexes_before_dataload =
    {"Create all imdexes before loading data. This can be useful when in the need to avoid the operation with table filled", false}
-   
-
-      
 }
 
 -- Prepare the dataset. This command supports parallel execution, i.e. will
