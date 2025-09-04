@@ -92,7 +92,10 @@ sysbench.cmdline.options = {
    stats_format=
    {"Specify how you want the statistics written [default=human readable; csv; json ", "human"},
    create_indexes_before_dataload =
-   {"Create all imdexes before loading data. This can be useful when in the need to avoid the operation with table filled", false}
+   {"Create all imdexes before loading data. This can be useful when in the need to avoid the operation with table filled", false},
+   chunk_size_in_prepare = 
+      {"Split the data load by chunk instead loading all in one transactions. Using 0 means disable chunk," ..
+         "Chunk size cannot be larger than 1/4 of the number of rows",0}
 }
 
 -- Prepare the dataset. This command supports parallel execution, i.e. will
@@ -200,7 +203,21 @@ function create_table(drv, con, table_num)
    local engine_def = ""
    local extra_table_options = ""
    local query
+   local chunck = 0
+   local rows = sysbench.opt.table_size 
+   
 
+   -- If chunk is defined then we calculate if it is too large and resize 
+   if sysbench.opt.chunk_size_in_prepare > 0 then
+      chunck = sysbench.opt.chunk_size_in_prepare
+      max_cunck_size = rows / 4 
+      print(string.format("Max chunk size '%d'...", max_cunck_size))
+
+      if chunck > max_cunck_size then
+         chunck = max_cunck_size
+      end
+      print(string.format("Using chunks to load data chunk size'%d'...", chunck))
+   end
    if sysbench.opt.secondary then
      id_index_def = "KEY xid"
    else
@@ -272,13 +289,14 @@ sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, ext
                           sysbench.opt.table_size, sysbench.opt.table_name, table_num))
    end
 
+   local query_pre = ""
    if sysbench.opt.auto_inc then
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query_pre = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    else
-      query = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
+      query_pre = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES"
    end
 
-   con:bulk_insert_init(query)
+   con:bulk_insert_init(query_pre)
 
    local c_val
    local pad_val
@@ -292,10 +310,11 @@ sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, ext
    local continent
    local active
    local strrecordtype = "@@@"
+   local row_counter = 0
    
 --sysbench.opt.table_size
-   con:bulk_insert_init(query)
-
+   con:bulk_insert_init(query_pre)
+   query = ""
 
    for i = 1, sysbench.opt.table_size do
 
@@ -335,6 +354,18 @@ sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, ext
       end
      -- print("DEBUG :" .. continent)
       con:bulk_insert_next(query)
+
+      if chunck > 0 then
+         row_counter = row_counter + 1
+
+         if row_counter >= chunck then
+            row_counter = 0
+            con:bulk_insert_done()
+            con:query("COMMIT")
+            print(string.format("Flushing chunk data for table '%s%d' inserted rows {%d}", sysbench.opt.table_name, table_num, i))
+            con:bulk_insert_init(query_pre)
+         end
+      end
    end
 
    con:bulk_insert_done()
