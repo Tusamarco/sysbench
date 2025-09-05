@@ -39,7 +39,9 @@ sysbench.cmdline.options = {
       {"Number of tables", 1},
    from_table =
       {"prepare from this table number", 0},
-   point_selects =
+   from_row =
+      {"prepare tables starting from the given row number", 1},
+      point_selects =
       {"Number of point SELECT queries per transaction", 10},
    simple_ranges =
       {"Number of simple range SELECT queries per transaction", 1},
@@ -90,7 +92,7 @@ sysbench.cmdline.options = {
    table_name=
    {"Specify a table name instead sbtest", "sbtest"},
    stats_format=
-   {"Specify how you want the statistics written [default=human readable; csv; json ", "human"},
+   {"Specify how you want the statistics written [default=human (readable); csv; json] ", "human"},
    create_indexes_before_dataload =
    {"Create all imdexes before loading data. This can be useful when in the need to avoid the operation with table filled", false},
    chunk_size_in_prepare = 
@@ -251,38 +253,39 @@ function create_table(drv, con, table_num)
    
    --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
    
-   con:query(string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num))
-   
-   local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
-   
-   if sysbench.opt.no_primary_key and not sysbench.opt.auto_inc then
-      primaryKeyDefinition = ""
-   end
-   
-   query = string.format([[   
-   CREATE TABLE `%s%d` (
-  `id` %s,
-  `uuid` char(36) NOT NULL,
-  `millid` smallint(6) NOT NULL,
-  `kwatts_s` int(11) NOT NULL,
-  `date` date NOT NULL ,
-  `location` varchar(50) NOT NULL,
-  `continent` varchar(50) NOT NULL,
-  `active` smallint UNSIGNED NOT NULL DEFAULT '1',
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `strrecordtype` char(3) COLLATE utf8_bin NOT NULL %s
-  ) %s ROW_FORMAT=DYNAMIC  %s]],
-sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, extra_table_options)
+   if sysbench.opt.from_row < 2 then
+      con:query(string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num))
    
    
-   --print("DEBUG :" .. query)
+      local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
       
-   con:query(query)
-
-   if sysbench.opt.create_indexes_before_dataload then 
-	   create_indexes(drv, con, table_num)
-	end
-
+      if sysbench.opt.no_primary_key and not sysbench.opt.auto_inc then
+         primaryKeyDefinition = ""
+      end
+      
+      query = string.format([[   
+      CREATE TABLE `%s%d` (
+   `id` %s,
+   `uuid` char(36) NOT NULL,
+   `millid` smallint(6) NOT NULL,
+   `kwatts_s` int(11) NOT NULL,
+   `date` date NOT NULL ,
+   `location` varchar(50) NOT NULL,
+   `continent` varchar(50) NOT NULL,
+   `active` smallint UNSIGNED NOT NULL DEFAULT '1',
+   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   `strrecordtype` char(3) COLLATE utf8_bin NOT NULL %s
+   ) %s ROW_FORMAT=DYNAMIC  %s]],
+   sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, extra_table_options)
+      
+      
+      --print("DEBUG :" .. query)
+      con:query(query)
+      
+      if sysbench.opt.create_indexes_before_dataload then 
+         create_indexes(drv, con, table_num)
+      end
+   end   
 
    if (sysbench.opt.table_size > 0) then
       print(string.format("Inserting %d records into '%s%d'",
@@ -311,12 +314,19 @@ sysbench.opt.table_name, table_num, id_def, primaryKeyDefinition,engine_def, ext
    local active
    local strrecordtype = "@@@"
    local row_counter = 0
-   
+   local start_row = sysbench.opt.from_row
+   local end_row = sysbench.opt.table_size
+   if start_row < 2 then 
+      end_row = end_row - 1
+   end
+
+   print(string.format("Start filling tables from row# %d to row# %d ", sysbench.opt.from_row, sysbench.opt.table_size))
+
 --sysbench.opt.table_size
    con:bulk_insert_init(query_pre)
    query = ""
 
-   for i = 1, sysbench.opt.table_size do
+   for i = start_row, end_row do
 
       c_val = get_c_value()
       strrecordtype =  sysbench.rand.string("@@@")
