@@ -38,9 +38,12 @@ sysbench.cmdline.options = {
    tables =
       {"Number of tables", 1},
    from_table =
-      {"prepare from this table number", 0},
+      {"Prepare from this table number", 0},
    from_row =
-      {"prepare tables starting from the given row number", 1},
+      {"Prepare tables starting from the given row number", 1},
+   report_loaded_rows_every = 
+      {"Report how many rows were inserted during the data preparation. If 0 [default] it is disable." .. 
+      "If chunk_size_in_prepare is used, interval cannot be larger than the chunk_size_in_prepare dimension", 0},   
       point_selects =
       {"Number of point SELECT queries per transaction", 10},
    simple_ranges =
@@ -316,6 +319,9 @@ function create_table(drv, con, table_num)
    local row_counter = 0
    local start_row = sysbench.opt.from_row
    local end_row = sysbench.opt.table_size
+   local report_interval = sysbench.opt.report_loaded_rows_every
+   local report_counter = 0
+
    if start_row < 2 then 
       end_row = end_row - 1
    end
@@ -364,6 +370,14 @@ function create_table(drv, con, table_num)
       end
      -- print("DEBUG :" .. continent)
       con:bulk_insert_next(query)
+
+      if report_interval > 0 then
+         report_counter = report_counter + 1
+         if report_counter >= report_interval then
+            report_counter = 0
+            print(string.format("Data for table '%s%d' inserted rows {%d}", sysbench.opt.table_name, table_num, i))
+         end
+      end 
 
       if chunck > 0 then
          row_counter = row_counter + 1
