@@ -344,7 +344,7 @@ function create_table(drv, con, table_num)
  
                                                                                                                                   
       if (sysbench.opt.auto_inc) then
-        -- "(uuid,millid,kwatts_s,date,location,active,strrecordtyped)
+        -- "(uuid,millid,kwatts_s,date,location,continent,active,strrecordtyped)
          query = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
                                uuid,
                                millid,
@@ -432,10 +432,10 @@ local stmt_defs = {
       t.INT},
    inserts = {
       "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
-      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.INT, {t.CHAR, 3}},
+      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.CHAR, 20},t.INT, {t.CHAR, 3}},
    replace = {
       "REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?)",
-      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.VARCHAR, 50},t.INT, {t.CHAR, 3}},
+      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.CHAR, 20},t.INT, {t.CHAR, 3}},
   
 }
 
@@ -666,85 +666,88 @@ function execute_delete_inserts()
    for i = 1, sysbench.opt.delete_inserts do
       local id = get_id()
 
+      local query = get_query_insert(id, tnum)
+
+      param[tnum].deletes[1]:set(id)
+   
+      stmt[tnum].deletes:execute()
+      con:query(query)
+
+   end
+end
+
+function get_query_insert(id,tnum)
+
+  local query_prefix="" 	
 
 --      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,active,strrecordtyped) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?)",
 --      t.BIGINT, t.TINYINT, t.INT, {t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
-      
-      millid = sysbench.rand.default(1,400)
-      kwatts_s = sysbench.rand.default(0,4000000)
-      location =sysbench.rand.varstringalpha(5, 50)
-      continent =sysbench.rand.continent(7)
-      active = sysbench.rand.default(0,65535)
-      
-      param[tnum].deletes[1]:set(id)
 
-      if not sysbench.opt.use_replace then
-	    param[tnum].inserts[1]:set(id)
-    	param[tnum].inserts[2]:set(millid)
-     	param[tnum].inserts[3]:set(kwatts_s)
-     	param[tnum].inserts[4]:set(location)
-      	param[tnum].inserts[5]:set(continent)
-      	param[tnum].inserts[6]:set(active)
-      	param[tnum].inserts[7]:set_rand_str_alpha("")
-      else
-	    param[tnum].replace[1]:set(id)
-    	param[tnum].replace[2]:set(millid)
-     	param[tnum].replace[3]:set(kwatts_s)
-     	param[tnum].replace[4]:set(location)
-      	param[tnum].replace[5]:set(continent)
-      	param[tnum].replace[6]:set(active)
-      	param[tnum].replace[7]:set_rand_str_alpha("")
-      end
-      
-      stmt[tnum].deletes:execute()
-      if not sysbench.opt.use_replace then
-	     stmt[tnum].inserts:execute()
-	    else
-	    stmt[tnum].replace:execute()
-	  end  
-   end
+  if not sysbench.opt.use_replace then
+	  query_prefix= string.format("INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  else
+	  query_prefix= string.format("REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  end
+  
+  if id == 0  then
+		  query_prefix= string.format("INSERT INTO %s%u (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  else
+	  if not sysbench.opt.use_replace then
+		  query_prefix= string.format("INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+	  else
+		  query_prefix= string.format("REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+	  end
+  
+  end
+  
+  local uuid = "UUID()"
+  local date = "NOW()"
+  
+  millid = sysbench.rand.default(1,400)
+  kwatts_s = sysbench.rand.default(0,4000000)
+  location =sysbench.rand.varstringalpha(5, 50)
+  continent =sysbench.rand.continent(7)
+  active = sysbench.rand.default(0,65535)
+--	(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype)
+  
+  if id == 0 then    
+	  query_values = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
+					   uuid,
+					   millid,
+					   kwatts_s,
+					   date,
+					   location,
+					   continent,
+					   active,
+					   strrecordtype
+					   )
+
+  else 
+	  query_values = string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
+					   id,
+					   uuid,
+					   millid,
+					   kwatts_s,
+					   date,
+					   location,
+					   continent,
+					   active,
+					   strrecordtype
+					   )
+	end
+				   
+	local query = query_prefix .. query_values
+	return query			   
 end
+
 
 function execute_inserts()
    local tnum = get_table_num()
 
    for i = 1, sysbench.opt.delete_inserts do
       local id = get_id()
-
-
---      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,active,strrecordtyped) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?)",
---      t.BIGINT, t.TINYINT, t.INT, {t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
-      
-      millid = sysbench.rand.default(1,400)
-      kwatts_s = sysbench.rand.default(0,4000000)
-      location =sysbench.rand.varstringalpha(5, 50)
-      continent =sysbench.rand.continent(7)
-      active = sysbench.rand.default(0,65535)
-          
-      if not sysbench.opt.use_replace then
-	    param[tnum].inserts[1]:set(id)
-    	param[tnum].inserts[2]:set(millid)
-     	param[tnum].inserts[3]:set(kwatts_s)
-     	param[tnum].inserts[4]:set(location)
-      	param[tnum].inserts[5]:set(continent)
-      	param[tnum].inserts[6]:set(active)
-      	param[tnum].inserts[7]:set_rand_str_alpha("")
-      else
-	    param[tnum].replace[1]:set(id)
-    	param[tnum].replace[2]:set(millid)
-     	param[tnum].replace[3]:set(kwatts_s)
-     	param[tnum].replace[4]:set(location)
-      	param[tnum].replace[5]:set(continent)
-      	param[tnum].replace[6]:set(active)
-      	param[tnum].replace[7]:set_rand_str_alpha("")
-      end
-      
-      if not sysbench.opt.use_replace then
-	     stmt[tnum].inserts:execute()
-	    else
-	    stmt[tnum].replace:execute()      
-      end    
-
+      local query = get_query_insert(0, tnum)		
+      con:query(query)
    end
 end
 
