@@ -736,7 +736,7 @@ function get_query_insert(id,tnum)
 					   )
 	end
 				   
-	local query = query_prefix .. query_values
+	local query = query_prefix .. query_values .. " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
 	return query			   
 end
 
