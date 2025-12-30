@@ -1,0 +1,1141 @@
+-- Copyright (C) 2006-present Marco Tusa <tusamarco@gmail.com>
+
+-- This program is free software; you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation; either version 2 of the License, or
+-- (at your option) any later version.
+
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+
+-- You should have received a copy of the GNU General Public License
+-- along with this program; if not, write to the Free Software
+-- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+-- -----------------------------------------------------------------------------
+-- Common code for OLTP benchmarks.
+-- -----------------------------------------------------------------------------
+
+function init()
+   assert(event ~= nil,
+          "this script is meant to be included by other OLTP scripts and " ..
+             "should not be called directly.")
+end
+
+if sysbench.cmdline.command == nil then
+   error("Command is required. Supported commands: prepare, warmup, run, " ..
+            "cleanup, help")
+end
+
+-- Command line options
+sysbench.cmdline.options = {
+   table_size =
+      {"Number of rows per table", 10000},
+   range_size =
+      {"Range size for range SELECT queries", 100},
+   tables =
+      {"Number of tables", 1},
+   from_table =
+      {"Prepare from this table number", 0},
+   from_row =
+      {"Prepare tables starting from the given row number", 1},
+   report_loaded_rows_every = 
+      {"Report how many rows were inserted during the data preparation. If 0 [default] it is disable." .. 
+      "If chunk_size_in_prepare is used, interval cannot be larger than the chunk_size_in_prepare dimension", 0},   
+   simple_inner_pk =
+      {"Number of simple_inner joins by pk queries per transaction", 1},
+   delete_inserts =
+      {"Number of DELETE/INSERT combination per transaction", 0},
+   range_selects =
+      {"Enable/disable all range SELECT queries", true},
+   auto_inc =
+   {"Use AUTO_INCREMENT column as Primary Key (for MySQL), " ..
+       "or its alternatives in other DBMS. When disabled, use " ..
+       "client-generated IDs", true},
+   skip_trx =
+      {"Don't start explicit transactions and execute all queries " ..
+          "in the AUTOCOMMIT mode", false},
+   secondary =
+      {"Use a secondary index in place of the PRIMARY KEY", false},
+   create_secondary =
+      {"Create a secondary index esin addition to the PRIMARY KEY", true},
+   create_compound =
+      {"Create compound indexes in addition to the PRIMARY KEY", true},
+   use_replace =
+      {"Use replace instead Insert", false},
+   no_primary_key =
+      {"We will not create an explicit primary key on the tables. Keep in mind INNODB will generate it anyhow", false},
+   reconnect =
+      {"Reconnect after every N events. The default (0) is to not reconnect",
+       0},      
+   mysql_storage_engine =
+      {"Storage engine, if MySQL is used", "innodb"},
+   pgsql_variant =
+      {"Use this PostgreSQL variant when running with the " ..
+          "PostgreSQL driver. The only currently supported " ..
+          "variant is 'redshift'. When enabled, " ..
+          "create_secondary is automatically disabled, and " ..
+          "delete_inserts is set to 0"},
+   mysql_table_options=
+   {"Add specific table instructions like charset and ROW format", " CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=DYNAMIC "},
+   table_name=
+   {"Specify a table name instead main", "main"},
+   stats_format=
+   {"Specify how you want the statistics written [default=human (readable); csv; json] ", "human"},
+   create_indexes_before_dataload =
+   {"Create all imdexes before loading data. This can be useful when in the need to avoid the operation with table filled", false},
+   chunk_size_in_prepare = 
+      {"Split the data load by chunk instead loading all in one transactions. Using 0 means disable chunk," ..
+         "Chunk size cannot be larger than 1/4 of the number of rows",0},
+   debug_lua = 
+      {"Enable debug messages during data preparation", 0}
+}
+
+-- Prepare the dataset. This command supports parallel execution, i.e. will
+-- benefit from executing with --threads > 1 as long as --tables > 1
+function cmd_prepare()
+   local drv = sysbench.sql.driver()
+   local con = drv:connect()
+
+   for i = (sysbench.tid % sysbench.opt.threads + 1) + sysbench.opt.from_table, sysbench.opt.tables,
+   sysbench.opt.threads do
+      create_table_main(drv, con, i)
+   end
+
+   -- Creaate Level tables for a maximum of 5 levels
+   for i = (sysbench.tid % sysbench.opt.threads + 1), 5, sysbench.opt.threads do
+      create_table_level(drv, con, i)
+   end
+
+end
+
+-- Preload the dataset into the server cache. This command supports parallel
+-- execution, i.e. will benefit from executing with --threads > 1 as long as
+-- --tables > 1
+--
+-- PS. Currently, this command is only meaningful for MySQL/InnoDB benchmarks
+function cmd_warmup()
+   local drv = sysbench.sql.driver()
+   local con = drv:connect()
+
+   assert(drv:name() == "mysql", "warmup is currently MySQL only")
+
+   -- Do not create on disk tables for subsequent queries
+   con:query("SET tmp_table_size=2*1024*1024*1024")
+   con:query("SET max_heap_table_size=2*1024*1024*1024")
+
+   for i = sysbench.tid % sysbench.opt.threads + 1, sysbench.opt.tables,
+   sysbench.opt.threads do
+      local t = sysbench.opt.table_name .. i
+      print("Preloading table " .. t)
+      con:query("ANALYZE TABLE ".. t)
+      con:query(string.format(
+                   "SELECT AVG(id) FROM " ..
+                      "(SELECT * FROM %s FORCE KEY (PRIMARY) " ..
+                      "LIMIT %u) t",
+                   t, sysbench.opt.table_size))
+   end
+end
+
+-- Implement parallel prepare and warmup commands, define 'prewarm' as an alias
+-- for 'warmup'
+sysbench.cmdline.commands = {
+   prepare = {cmd_prepare, sysbench.cmdline.PARALLEL_COMMAND},
+   warmup = {cmd_warmup, sysbench.cmdline.PARALLEL_COMMAND},
+   prewarm = {cmd_warmup, sysbench.cmdline.PARALLEL_COMMAND}
+}
+
+function create_indexes(drv, con, table_num)
+   if sysbench.opt.create_secondary then
+	  print(string.format("Creating a secondary index on '%s%d'...",
+						  sysbench.opt.table_name,table_num))
+					
+	--   con:query(string.format("CREATE INDEX kuuid_x ON %s%d(uuid)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))
+	--   con:query(string.format("CREATE INDEX millid_x ON %s%d(millid)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))
+	--   con:query(string.format("CREATE INDEX active_x ON %s%d(active)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))
+						  
+   end
+   if sysbench.opt.create_compound then
+	  print(string.format("Creating a compound index on '%s%d'...",
+						  sysbench.opt.table_name,table_num))
+					  
+	--   con:query(string.format("CREATE INDEX IDX_millid ON %s%d(`millid`,`active`)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))                    
+
+	--   con:query(string.format("CREATE INDEX IDX_active ON %s%d(`id`,`active`)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))                    
+
+	--   con:query(string.format("CREATE INDEX kcontinent_x ON %s%d(`continent`,`id`)",
+	-- 						  sysbench.opt.table_name,table_num, table_num))                    
+
+   end
+
+end
+
+
+-- Function to create the level table and populate it with data
+function create_table_level(drv, con, table_num)
+   local engine_def = ""
+   local query
+   local chunck = 0
+   local rows = sysbench.opt.table_size 
+   local table_name_level = "level"
+
+      -- If chunk is defined then we calculate if it is too large and resize 
+   if sysbench.opt.chunk_size_in_prepare > 0 then
+      chunck = sysbench.opt.chunk_size_in_prepare
+      max_cunck_size = rows / 4 
+      print(string.format("Max chunk size '%d'...", max_cunck_size))
+
+      if chunck > max_cunck_size then
+         chunck = max_cunck_size
+      end
+      print(string.format("Using chunks to load data chunk size'%d'...", chunck))
+   end
+   
+   if drv:name() == "mysql" 
+   then
+      if sysbench.opt.auto_inc then
+         id_def = "BIGINT(11) NOT NULL AUTO_INCREMENT"
+      else
+         id_def = "BIGINT NOT NULL"
+      end
+      engine_def = "/*! ENGINE = " .. sysbench.opt.mysql_storage_engine .. " */"
+      extra_table_options = sysbench.opt.mysql_table_options or ""
+   elseif drv:name() == "pgsql"
+   then
+      if not sysbench.opt.auto_inc then
+         id_def = "INTEGER NOT NULL"
+      elseif pgsql_variant == 'redshift' then
+        id_def = "INTEGER IDENTITY(1,1)"
+      else
+        id_def = "SERIAL"
+      end
+   else
+      error("Unsupported database driver:" .. drv:name())
+   end
+
+   print(string.format("Creating table '%s%d'...", table_name_level,table_num))
+   
+
+   --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
+   
+   if sysbench.opt.from_row < 2 then
+      con:query(string.format([[DROP TABLE IF EXISTS %s%d]],table_name_level, table_num))
+   
+      local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
+      
+      if sysbench.opt.no_primary_key and not sysbench.opt.auto_inc then
+         primaryKeyDefinition = ""
+      end
+
+      query = string.format([[   
+      CREATE TABLE `%s%d` (
+      `id` %s,
+      continent VARCHAR(45) NOT NULL,
+      parent_id BIGINT,  -- For hierarchical structure if needed
+      time_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      l1_id INT,
+      l2_id INT,
+      l3_id INT,
+      l4_id INT,
+      l5_id INT,    
+      record_name CHAR(36),
+      record_code CHAR(5),
+      record_value BIGINT,
+      record_status ENUM('active', 'inactive', 'pending'),
+      record_priority INT NOT NULL,
+      INDEX idx_country (continent),
+      INDEX idx_parent_id (parent_id),
+      INDEX idx_l1_id (l1_id),
+      INDEX idx_l2_id (l2_id),
+      INDEX idx_l3_id (l3_id),
+      INDEX idx_l4_id (l4_id),
+      INDEX idx_l5_id (l5_id),
+      INDEX idx_time_accessed (time_accessed),
+      INDEX idx_record_status (record_status),
+      INDEX idx_record_priority (record_priority),
+      INDEX comp_record_continent_status_priority(continent,record_status,record_priority)
+
+      
+      -- Foreign key constraints (commented - enable when tables exist)
+      -- FOREIGN KEY (parent_id) REFERENCES level1(id) ON DELETE CASCADE,
+      -- FOREIGN KEY (l2_id) REFERENCES level2(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l3_id) REFERENCES level3(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l4_id) REFERENCES level4(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l5_id) REFERENCES level5(id) ON DELETE SET NULL
+) %s, %s]],
+   table_name_level, table_num, id_def .. primaryKeyDefinition,engine_def, extra_table_options)      
+      
+      --print("DEBUG :" .. query)
+      con:query(query)
+      
+      if sysbench.opt.create_indexes_before_dataload then 
+         create_indexes(drv, con, table_num)
+      end
+   end   
+
+   if (sysbench.opt.table_size > 0) then
+      print(string.format("Inserting %d records into '%s%d'",
+                          sysbench.opt.table_size, table_name_level, table_num))
+   end
+
+   local query_pre = ""
+   if sysbench.opt.auto_inc then
+      query_pre = "INSERT INTO " ..  table_name_level .. table_num .. "(continent, parent_id, time_accessed, l1_id, l2_id, l3_id, l4_id, l5_id, record_name, record_code, record_value, record_status, record_priority) VALUES"
+   else
+      query_pre = "INSERT INTO " ..  table_name_level .. table_num .. "(id, continent, parent_id, time_accessed, l1_id, l2_id, l3_id, l4_id, l5_id, record_name, record_code, record_value, record_status, record_priority) VALUES"
+   end
+ 
+   con:bulk_insert_init(query_pre)
+   
+   local row_counter = 0
+   local start_row = sysbench.opt.from_row
+   local end_row = sysbench.opt.table_size
+   local report_interval = sysbench.opt.report_loaded_rows_every
+   local report_counter = 0
+
+   if start_row < 2 and rows > 1 then 
+      end_row = end_row - 1
+   end
+
+   print(string.format("Start filling tables from row# %d to row# %d ", sysbench.opt.from_row, sysbench.opt.table_size))
+
+   con:bulk_insert_init(query_pre)
+   query = ""
+
+   for i = start_row, end_row do
+
+      -- Generate the values for the insert query
+      query = initialize_values_level(i)
+
+--      print("DEBUG query: " .. query_pre .. query)
+
+      con:bulk_insert_next(query)
+
+      if report_interval > 0 then
+         report_counter = report_counter + 1
+         if report_counter >= report_interval then
+            report_counter = 0
+            print(string.format("Data for table '%s%d' inserted rows {%d}", table_name_level, table_num, i))
+         end
+      end 
+
+      if chunck > 0 then
+         row_counter = row_counter + 1
+
+         if row_counter >= chunck then
+            row_counter = 0
+            con:bulk_insert_done()
+            con:query("COMMIT")
+            print(string.format("Flushing chunk data for table '%s%d' inserted rows {%d}", table_name_level, table_num, i))
+            con:bulk_insert_init(query_pre)
+         end
+      end
+   end
+
+   con:bulk_insert_done()
+   con:query("ANALYZE TABLE " .. table_name_level .. table_num)
+
+end
+
+
+-- Function to create the main table and populate it with data
+function create_table_main(drv, con, table_num)
+   local id_index_def, id_def
+   local engine_def = ""
+   local extra_table_options = ""
+   local query
+   local chunck = 0
+   local rows = sysbench.opt.table_size 
+   
+      -- If chunk is defined then we calculate if it is too large and resize 
+   if sysbench.opt.chunk_size_in_prepare > 0 then
+      chunck = sysbench.opt.chunk_size_in_prepare
+      max_cunck_size = rows / 4 
+      print(string.format("Max chunk size '%d'...", max_cunck_size))
+
+      if chunck > max_cunck_size then
+         chunck = max_cunck_size
+      end
+      print(string.format("Using chunks to load data chunk size'%d'...", chunck))
+   end
+   
+   if drv:name() == "mysql" 
+   then
+      if sysbench.opt.auto_inc then
+         id_def = "BIGINT(11) NOT NULL AUTO_INCREMENT"
+      else
+         id_def = "BIGINT NOT NULL"
+      end
+      engine_def = "/*! ENGINE = " .. sysbench.opt.mysql_storage_engine .. " */"
+      extra_table_options = sysbench.opt.mysql_table_options or ""
+   elseif drv:name() == "pgsql"
+   then
+      if not sysbench.opt.auto_inc then
+         id_def = "INTEGER NOT NULL"
+      elseif pgsql_variant == 'redshift' then
+        id_def = "INTEGER IDENTITY(1,1)"
+      else
+        id_def = "SERIAL"
+      end
+   else
+      error("Unsupported database driver:" .. drv:name())
+   end
+
+   print(string.format("Creating table '%s%d'...", sysbench.opt.table_name,table_num))
+   
+
+   --print("DEBUG TABLE OPTION" .. sysbench.opt.mysql_table_options)
+   
+   if sysbench.opt.from_row < 2 then
+      con:query(string.format([[DROP TABLE IF EXISTS %s%d]],sysbench.opt.table_name, table_num))
+   
+      local primaryKeyDefinition = ", PRIMARY KEY (`id`)"
+      
+      if sysbench.opt.no_primary_key and not sysbench.opt.auto_inc then
+         primaryKeyDefinition = ""
+      end
+
+      query = string.format([[   
+      CREATE TABLE `%s%d` (
+      `id` %s,
+      l1_id INT,           -- Foreign key to level1.id
+      l2_id INT,           -- Foreign key to level2.id
+      l3_id INT,           -- Foreign key to level3.id
+      l4_id INT,           -- Foreign key to level4.id
+      l5_id INT,           -- Foreign key to level5.id
+      
+      -- Numeric data types
+      small_number SMALLINT,
+      integer_number INT,
+      myvalue BIGINT,
+      decimal_number DECIMAL(10, 2),
+      float_number FLOAT,
+
+      -- String data types
+      char_field CHAR(10),
+      varchar_field VARCHAR(255),
+      color VARCHAR(50),
+      continent VARCHAR(255),
+      uuid VARCHAR(36) CHARACTER SET latin1,
+      uuid_bin BINARY(16),
+      text_field TEXT,
+      
+      -- Date and time data types
+      datetime_field DATETIME,
+      timestamp_field TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      year_field YEAR,
+      
+      -- Binary data types
+      binary_field BINARY(50),
+      varbinary_field VARBINARY(255),
+      
+      -- Special data types
+      enum_field ENUM('active', 'inactive', 'pending'),
+      set_field SET('read', 'write', 'execute', 'delete'),
+      
+      -- Boolean type
+      is_active BOOLEAN DEFAULT TRUE,
+      
+      -- Spatial data type (if using GIS)
+      -- point_field POINT,
+      
+      -- Constraints
+      UNIQUE KEY unique_varchar (uuid),
+      INDEX idx_l1_id (l1_id),
+      INDEX idx_l2_id (l2_id),
+      INDEX idx_l3_id (l3_id),
+      INDEX idx_l4_id (l4_id),
+      INDEX idx_l5_id (l5_id),
+      INDEX idx_date (datetime_field),
+      INDEX idx_time (timestamp_field),
+      INDEX idx_enum_field (enum_field),
+      INDEX idx_set_field (set_field),
+      INDEX idx_year_field (year_field),
+      INDEX comp_attributes(continent,enum_field,set_field),
+      INDEX comp_color(color,continent,year_field)
+      
+      -- Foreign key constraints (commented out - enable as needed)
+      -- FOREIGN KEY (l1_id) REFERENCES level1(id),
+      -- FOREIGN KEY (l2_id) REFERENCES level2(id),
+      -- FOREIGN KEY (l3_id) REFERENCES level3(id),
+      -- FOREIGN KEY (l4_id) REFERENCES level4(id),
+      -- FOREIGN KEY (l5_id) REFERENCES level5(id),
+      
+      -- CONSTRAINT chk_numbers CHECK (small_number >= 0)
+) %s, %s]],
+   sysbench.opt.table_name, table_num, id_def .. primaryKeyDefinition,engine_def, extra_table_options)      
+      
+      --print("DEBUG :" .. query)
+      con:query(query)
+      
+      if sysbench.opt.create_indexes_before_dataload then 
+         create_indexes(drv, con, table_num)
+      end
+   end   
+
+   if (sysbench.opt.table_size > 0) then
+      print(string.format("Inserting %d records into '%s%d'",
+                          sysbench.opt.table_size, sysbench.opt.table_name, table_num))
+   end
+
+   local query_pre = ""
+   if sysbench.opt.auto_inc then
+      query_pre = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field,color, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, enum_field, set_field, is_active) VALUES"
+   else
+      query_pre = "INSERT INTO " ..  sysbench.opt.table_name .. table_num .. "(id, l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field, color, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, enum_field, set_field, is_active) VALUES"
+   end
+ 
+   con:bulk_insert_init(query_pre)
+   
+   local row_counter = 0
+   local start_row = sysbench.opt.from_row
+   local end_row = sysbench.opt.table_size
+   local report_interval = sysbench.opt.report_loaded_rows_every
+   local report_counter = 0
+
+   if start_row < 2 and rows > 1 then 
+      end_row = end_row - 1
+   end
+
+   print(string.format("Start filling tables from row# %d to row# %d ", sysbench.opt.from_row, sysbench.opt.table_size))
+
+   con:bulk_insert_init(query_pre)
+   query = ""
+
+   for i = start_row, end_row do
+
+      -- Generate the values for the insert query
+      query = initialize_values_main(i)
+
+      if sysbench.opt.debug_lua > 0 then
+            print("DEBUG query: " .. query_pre .. query)
+      end
+      -- error("Givwe me a break")
+
+      con:bulk_insert_next(query)
+
+      if report_interval > 0 then
+         report_counter = report_counter + 1
+         if report_counter >= report_interval then
+            report_counter = 0
+            print(string.format("Data for table '%s%d' inserted rows {%d}", sysbench.opt.table_name, table_num, i))
+         end
+      end 
+
+      if chunck > 0 then
+         row_counter = row_counter + 1
+
+         if row_counter >= chunck then
+            row_counter = 0
+            con:bulk_insert_done()
+            con:query("COMMIT")
+            print(string.format("Flushing chunk data for table '%s%d' inserted rows {%d}", sysbench.opt.table_name, table_num, i))
+            con:bulk_insert_init(query_pre)
+         end
+      end
+   end
+
+   con:bulk_insert_done()
+
+   if not sysbench.opt.create_indexes_before_dataload then 
+	   create_indexes(drv, con, table_num)
+	end
+      con:query("ANALYZE TABLE " .. sysbench.opt.table_name .. table_num)
+
+end
+
+local t = sysbench.sql.type
+local insertAction = "INSERT"
+local onDuplicateKeyAction = " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
+
+-- Not used for join tests but kept for possible future use deletes and inserts 
+local stmt_defs = {
+   deletes = {
+      "DELETE FROM %s%u WHERE id=?",
+      t.INT},
+   inserts = {
+      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1",
+      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.CHAR, 20},t.INT, {t.CHAR, 3}},
+   replace = {
+      "REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?, ?)",
+      t.BIGINT, t.INT,t.INT, {t.VARCHAR, 50},{t.CHAR, 20},t.INT, {t.CHAR, 3}},
+  
+}
+
+-- Initialize the value for each field and return the string to be used in the insert query
+function initialize_values_level(i)
+ local query = ""
+   id = i
+   continent = get_continent()
+   parent_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   time_accessed = "NOW()"
+   l1_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l2_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l3_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l4_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l5_id = sysbench.rand.default(1,sysbench.opt.table_size)    
+   record_name = "UUID()"
+   record_code = get_record_code()
+   record_value = sysbench.rand.default(0,2147483647)
+   record_status = get_record_status()  
+   record_priority = sysbench.rand.default(1,10)
+   
+   if (sysbench.opt.auto_inc) then
+         query = string.format("('%s', %d, %s, %d, %d, %d, %d,%d,%s, '%s', %d, '%s', %d)",
+            continent,
+            parent_id,
+            time_accessed,
+            l1_id,
+            l2_id,
+            l3_id,
+            l4_id,
+            l5_id,
+            record_name,
+            record_code,
+            record_value,
+            record_status,
+            record_priority
+         )
+   else
+         query = string.format("(%d, '%s', %d, %s, %d, %d,%d, %d, %d, %s, '%s', %d, '%s', %d)",
+            id,
+            continent,
+            parent_id,
+            time_accessed,
+            l1_id,
+            l2_id,
+            l3_id,
+            l4_id,
+            l5_id,
+            record_name,
+            record_code,
+            record_value,
+            record_status,
+            record_priority
+         )
+   end
+   
+   return query
+
+end
+
+-- Initialize the value for each field and return the string to be used in the insert query
+function initialize_values_main(i)
+ local query = ""
+ 
+ 
+--  Field	Datatype	Range/Description
+--       id	BIGINT	-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 (Auto-increment)
+--       l1_id	INT	-2,147,483,648 to 2,147,483,647
+--       l2_id	INT	-2,147,483,648 to 2,147,483,647
+--       l3_id	INT	-2,147,483,648 to 2,147,483,647
+--       l4_id	INT	-2,147,483,648 to 2,147,483,647
+--       l5_id	INT	-2,147,483,648 to 2,147,483,647
+--       small_number	SMALLINT	-32,768 to 32,767
+--       integer_number	INT	-2,147,483,648 to 2,147,483,647
+--       myvalue	BIGINT	-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+--       decimal_number	DECIMAL(10,2)	-99,999,999.99 to 99,999,999.99 (10 total digits, 2 decimal places)
+--       float_number	FLOAT	Approximately ±3.402823466E+38 (7 decimal digits precision)
+--       char_field	CHAR(10)	Fixed-length string, exactly 10 characters
+--       varchar_field	VARCHAR(255)	Variable-length string, up to 255 characters
+--       continent	VARCHAR(255)	Variable-length string, up to 255 characters
+--       uuid	VARCHAR(36)	Variable-length string, up to 36 characters (Latin1 charset)
+--       uuid_bin	BINARY(16)	Fixed-length binary, exactly 16 bytes
+--       text_field	TEXT	Variable-length string, up to 65,535 characters
+--       datetime_field	DATETIME	'1000-01-01 00:00:00' to '9999-12-31 23:59:59'
+--       timestamp_field	TIMESTAMP	'1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' UTC (Default: CURRENT_TIMESTAMP)
+--       year_field	YEAR	1901 to 2155, or 4-digit year 0000
+--       binary_field	BINARY(16)	Fixed-length binary, exactly 16 bytes
+--       varbinary_field	VARBINARY(255)	Variable-length binary, up to 255 bytes
+--       enum_field	ENUM	'active', 'inactive', 'pending'
+--       set_field	SET	Combination of 'read', 'write', 'execute', 'delete'
+--       is_active	BOOLEAN	TRUE (1) or FALSE (0), Default: TRUE
+
+   id = i
+   l1_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l2_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l3_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l4_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   l5_id = sysbench.rand.default(1,sysbench.opt.table_size)
+   small_number = sysbench.rand.default(0,32767)
+   integer_number = sysbench.rand.default(0,2147483647)
+   myvalue = sysbench.rand.default(0,2147483647)
+   decimal_number = sysbench.rand.default(0,99999999)
+   float_number = sysbench.rand.default(0,34028234663852886)
+   char_field = sysbench.rand.varstringalpha(0,10)
+   varchar_field = sysbench.rand.varstringalpha(0,255)
+   color = get_color()
+   continent = get_continent()
+   uuid = "REVERSE(UUID())"
+   uuid_bin = "UNHEX(REPLACE(UUID(),'-',''))"
+   text_field = sysbench.rand.varstringalpha(0,6)
+   date = "NOW()"
+   timestamp_field = "NOW()"
+   year_field = sysbench.rand.default(1999,2035)
+   binary_field = sysbench.rand.varstringalpha(5, 50) 
+   varbinary_field = sysbench.rand.varstringalpha(5, 50)
+   enum_field = get_record_status()  
+   set_field = get_field()
+   is_active = sysbench.rand.default(0,1)
+   
+                                                                                                                                 
+   if (sysbench.opt.auto_inc) then
+      -- "(l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field, color, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, blob_field, medium_blob, long_blob, enum_field, set_field, is_active)
+      
+      query = string.format("(%d, %d, %d, %d, %d, %d, %d, %d, %d, %f, '%s', '%s', '%s', '%s', %s, %s, '%s', %s, %s, %d, '%s', '%s','%s', '%s', %d)",
+                           l1_id,
+                           l2_id,
+                           l3_id,
+                           l4_id,
+                           l5_id,
+                           small_number,
+                           integer_number,
+                           myvalue,
+                           decimal_number,
+                           float_number,
+                           char_field,
+                           varchar_field,
+                           color,
+                           continent,
+                           uuid,
+                           uuid_bin,
+                           text_field,
+                           date,
+                           timestamp_field,
+                           year_field,
+                           binary_field,
+                           varbinary_field,
+                           enum_field,
+                           set_field,
+                           is_active
+                              )
+   else
+      -- "(id, l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, blob_field, medium_blob, long_blob, enum_field, set_field, json_field, is_active)
+      query = string.format("(%d,%d, %d, %d, %d, %d, %d, %d, %d, %d, %f, '%s', '%s', '%s', '%s', %s, %s, '%s', %s, %s, %d, '%s', '%s','%s', '%s', %d)",
+                              i,
+                           l1_id,
+                           l2_id,
+                           l3_id,
+                           l4_id,
+                           l5_id,
+                           small_number,
+                           integer_number,
+                           myvalue,
+                           decimal_number,
+                           float_number,
+                           char_field,
+                           varchar_field,
+                           color,
+                           continent,
+                           uuid,
+                           uuid_bin,
+                           text_field,
+                           date,
+                           timestamp_field,
+                           year_field,
+                           binary_field,
+                           varbinary_field,
+                           enum_field,
+                           set_field,
+                           is_active
+                              )
+   end
+
+   return query
+end
+
+-- Helper functions to get random values for specific fields
+function get_continent()
+     return getRandomValue("Africa, Antarctica, Asia, Europe, North America, Oceania, South America")
+end
+function get_record_status()
+     return getRandomValue("active,inactive,pending")
+end
+function get_color()
+     return getRandomValue("red, blue, yellow, green, orange, purple, black, white, brown, gray, pink, teal, magenta, cyan, maroon, indigo, lavender, turquoise, gold, silver")  
+end
+function get_field()
+     return getRandomValue("read,write,execute,delete") 
+end
+function get_record_code()
+       return getRandomValue("ZKLPM, TRXQD, BVHNY, FWJGS, MCPRD, KQWLN, XJTHF, GBNYS, PDQMZ, HRTVK, LSZQF, YWNXM, EFKPT, AVCRG, IBODU, JINSE, RTGOL, HMYZX, CKVAP, QFJWB, NUEMD, WXSIZ, OLTYG, VMBPJ, SAEQK, DNRHU, FTGIV, RYWCL, PHZOX, KSBMA, EJGNQ, WLVRD, QTCHU, IPBFS, NZMOY, XAGPK, UDRJV, COWZS, HETFN, BLIYG, MKRXQ, PVSAE, DJNUT, ZOCFW, GYHVQ, XQBTK, LISUP, WENMF, CZRAJ, TDVGH") 
+end   
+
+-- Function to get a random value from a comma-separated string
+function getRandomValue(csvString)
+    -- Split the comma-separated string
+    local values = {}
+    for value in csvString:gmatch("([^,]+)") do
+        table.insert(values, value:match("^%s*(.-)%s*$"))
+    end
+    
+    if #values == 0 then
+        return nil
+    end
+    
+    -- Better random seeding (only once at program start)
+    if not _randomSeeded then
+        math.randomseed(os.time() * 1000)
+        _randomSeeded = true
+    end
+    
+    return values[math.random(1, #values)]
+end
+
+function prepare_begin()
+   stmt.begin = con:prepare("BEGIN")
+end
+
+function prepare_commit()
+   stmt.commit = con:prepare("COMMIT")
+end
+
+function prepare_for_each_table(key)
+   for t = 1, sysbench.opt.tables do
+   
+      stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], sysbench.opt.table_name,t))
+-- print("DEBUG: " .. string.format(stmt_defs[key][1], sysbench.opt.table_name,t)
+
+      local nparam = #stmt_defs[key] - 1
+
+      if nparam > 0 then
+         param[t][key] = {}
+      end
+
+      for p = 1, nparam do
+         local btype = stmt_defs[key][p+1]
+         local len
+
+         if type(btype) == "table" then
+            len = btype[2]
+            btype = btype[1]
+         end
+         if btype == sysbench.sql.type.VARCHAR or
+            btype == sysbench.sql.type.CHAR then
+               param[t][key][p] = stmt[t][key]:bind_create(btype, len)
+         else
+            param[t][key][p] = stmt[t][key]:bind_create(btype)
+         end
+      end
+
+      if nparam > 0 then
+         stmt[t][key]:bind_param(unpack(param[t][key]))
+      end
+   end
+end
+
+-- function prepare_simple_inner_pk()
+--    prepare_for_each_table("simple_inner_pk")
+-- end
+
+function prepare_delete_inserts()
+   prepare_for_each_table("deletes")
+   if sysbench.opt.use_replace then
+	   prepare_for_each_table("replace")
+	else   
+	   prepare_for_each_table("inserts")
+   end 
+end
+
+function prepare_inserts()
+   if sysbench.opt.use_replace then
+	   prepare_for_each_table("replace")
+	else   
+	   prepare_for_each_table("inserts")
+   end 
+end
+
+
+
+function thread_init()
+   drv = sysbench.sql.driver()
+   con = drv:connect()
+
+   -- Create global nested tables for prepared statements and their
+   -- parameters. We need a statement and a parameter set for each combination
+   -- of connection/table/query
+   stmt = {}
+   param = {}
+
+   for t = 1, sysbench.opt.tables do
+      stmt[t] = {}
+      param[t] = {}
+   end
+
+   -- This function is a 'callback' defined by individual benchmark scripts
+   prepare_statements()
+end
+
+-- Close prepared statements
+function close_statements()
+   for t = 1, sysbench.opt.tables do
+      for k, s in pairs(stmt[t]) do
+         stmt[t][k]:close()
+      end
+   end
+   if (stmt.begin ~= nil) then
+      stmt.begin:close()
+   end
+   if (stmt.commit ~= nil) then
+      stmt.commit:close()
+   end
+end
+
+function thread_done()
+   close_statements()
+   con:disconnect()
+end
+
+function cleanup()
+   local drv = sysbench.sql.driver()
+   local con = drv:connect()
+
+   for i = 1, sysbench.opt.tables do
+      print(string.format("Dropping table '%s%d'...", sysbench.opt.table_name,i))
+      con:query("DROP TABLE IF EXISTS " .. sysbench.opt.table_name .. i )
+   end
+   for i = 1, 5 do
+      print(string.format("Dropping table '%s%d'...", 'level',i))
+      con:query("DROP TABLE IF EXISTS " .. 'level' .. i )
+   end
+
+
+
+end
+
+local function get_table_num()
+   return sysbench.rand.uniform(1, sysbench.opt.tables)
+end
+
+local function get_id()
+   return sysbench.rand.default(1, sysbench.opt.table_size)
+end
+
+function begin()
+   stmt.begin:execute()
+end
+
+function commit()
+   stmt.commit:execute()
+end
+
+function execute_simple_inner_pk()
+   local tnum = get_table_num()
+   local i
+
+   for i = 1, sysbench.opt.simple_inner_pk do
+   query = "SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1 \
+FROM %s%u as m  \
+INNER JOIN level1 ON m.l1_id = level1.id and level1.record_status = '".. get_record_status() .. "' \
+WHERE m.continent = '".. get_continent() .. "' \
+GROUP BY m.continent, m.year_field, m.enum_field \
+ORDER BY m.year_field DESC, cc DESC, cs DESC \
+LIMIT 10;"
+--      param[tnum].simple_inner_pk[1]:set(get_continent())
+--      param[tnum].simple_inner_pk[2]:set(get_record_status())
+
+--      stmt[tnum].simple_inner_pk:execute()
+      con:query(string.format(query, sysbench.opt.table_name, tnum))
+   end
+end
+
+local function execute_range(key)
+   local tnum = get_table_num()
+
+   for i = 1, sysbench.opt[key] do
+      local id = get_id()
+
+      param[tnum][key][1]:set(id)
+      param[tnum][key][2]:set(id + sysbench.opt.range_size - 1)
+
+      stmt[tnum][key]:execute()
+   end
+end
+
+function execute_simple_ranges()
+   execute_range("simple_ranges")
+end
+
+function execute_sum_ranges()
+   execute_range("sum_ranges")
+end
+
+function execute_order_ranges()
+   execute_range("order_ranges")
+end
+
+function execute_distinct_ranges()
+   execute_range("distinct_ranges")
+end
+
+function execute_index_updates()
+   local tnum = get_table_num()
+
+   for i = 1, sysbench.opt.index_updates do
+      param[tnum].index_updates[1]:set(sysbench.rand.default(0,65535))
+      param[tnum].index_updates[2]:set(get_id())
+      stmt[tnum].index_updates:execute()
+      
+--      param[tnum].index_updates[1]:set(1)
+--      param[tnum].index_updates[2]:set(get_id())
+--      stmt[tnum].index_updates:execute()      
+      
+   end
+end
+
+function execute_non_index_updates()
+   local tnum = get_table_num()
+    
+   for i = 1, sysbench.opt.non_index_updates do
+      param[tnum].non_index_updates[1]:set_rand_str_alpha("")
+      param[tnum].non_index_updates[2]:set(get_id())
+
+      stmt[tnum].non_index_updates:execute()
+   end
+end
+
+function execute_delete_inserts()
+   local tnum = get_table_num()
+
+   for i = 1, sysbench.opt.delete_inserts do
+      local id = get_id()
+
+      local query = get_query_insert(id, tnum)
+
+      param[tnum].deletes[1]:set(id)
+   
+      stmt[tnum].deletes:execute()
+      con:query(query)
+
+   end
+end
+
+function get_query_insert(id,tnum)
+
+  local query_prefix="" 	
+
+--      "INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,active,strrecordtyped) VALUES (?, UUID(), ?, ?, NOW(), ?, ?, ?)",
+--      t.BIGINT, t.TINYINT, t.INT, {t.VARCHAR, 50},t.TINYINT, {t.CHAR, 3}},
+
+  if not sysbench.opt.use_replace then
+	  query_prefix= string.format("INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  else
+	  query_prefix= string.format("REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  end
+  
+  if id == 0  then
+		  query_prefix= string.format("INSERT INTO %s%u (uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+  else
+	  if not sysbench.opt.use_replace then
+		  query_prefix= string.format("INSERT INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+	  else
+		  query_prefix= string.format("REPLACE INTO %s%u (id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype) VALUES ",sysbench.opt.table_name, tnum)
+	  end
+  
+  end
+  
+  local uuid = "UUID()"
+  local date = "NOW()"
+  
+  millid = sysbench.rand.default(1,400)
+  kwatts_s = sysbench.rand.default(0,4000000)
+  location =sysbench.rand.varstringalpha(5, 50)
+  continent =sysbench.rand.continent(7)
+  active = sysbench.rand.default(0,65535)
+--	(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype)
+  
+  if id == 0 then    
+	  query_values = string.format("(%s, %d, %d,%s,'%s','%s',%d,'%s')",
+					   uuid,
+					   millid,
+					   kwatts_s,
+					   date,
+					   location,
+					   continent,
+					   active,
+					   strrecordtype
+					   )
+
+  else 
+	  query_values = string.format("(%d,%s, %d, %d,%s,'%s','%s',%d,'%s')",
+					   id,
+					   uuid,
+					   millid,
+					   kwatts_s,
+					   date,
+					   location,
+					   continent,
+					   active,
+					   strrecordtype
+					   )
+	end
+				   
+	local query = query_prefix .. query_values .. " ON DUPLICATE KEY UPDATE kwatts_s=kwatts_s+1"
+	return query			   
+end
+
+
+function execute_inserts()
+   local tnum = get_table_num()
+
+   for i = 1, sysbench.opt.delete_inserts do
+      local id = get_id()
+      local query = get_query_insert(0, tnum)		
+      con:query(query)
+   end
+end
+
+-- Re-prepare statements if we have reconnected, which is possible when some of
+-- the listed error codes are in the --mysql-ignore-errors list
+function sysbench.hooks.before_restart_event(errdesc)
+   if errdesc.sql_errno == 2013 or -- CR_SERVER_LOST
+      errdesc.sql_errno == 2055 or -- CR_SERVER_LOST_EXTENDED
+      errdesc.sql_errno == 2006 or -- CR_SERVER_GONE_ERROR
+      errdesc.sql_errno == 2011    -- CR_TCP_CONNECTION
+   then
+      close_statements()
+      prepare_statements()
+   end
+end
+
+function check_reconnect()
+   if sysbench.opt.reconnect > 0 then
+      transactions = (transactions or 0) + 1
+      if transactions % sysbench.opt.reconnect == 0 then
+         close_statements()
+         con:reconnect()
+         prepare_statements()
+      end
+   end
+end
+
+function sysbench.hooks.report_intermediate(stat)
+   if sysbench.opt.stats_format == "human" then
+         sysbench.report_default(stat)
+   elseif sysbench.opt.stats_format == "csv" then
+         sysbench.report_csv(stat)
+   elseif sysbench.opt.stats_format == "json" then      
+         sysbench.report_json(stat)
+   else
+      sysbench.report_default(stat)
+   end
+end
+
+function sysbench.hooks.report_cumulative(stat)
+   if sysbench.opt.stats_format == "csv" then
+      sysbench.report_cumulative_csv(stat)
+   elseif sysbench.opt.stats_format == "json" then
+      sysbench.report_cumulative_csv(stat)   
+      -- sysbench.report_cumulative_json(stat)
+   else
+      sysbench.report_cumulative_default(stat)
+   end
+end
+
