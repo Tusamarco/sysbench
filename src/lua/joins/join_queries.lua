@@ -18,6 +18,9 @@
 -- Common code for join queries
 -- -----------------------------------------------------------------------------
 
+
+-- Join SQL code and mappings
+-- *****************************************************************
 -- ** INNER JOIN QUERIES **
 inner_queries = { 
     ["simple_inner_pk_query"] = [[SELECT m.continent,year_field, m.enum_field, level1.record_value l1
@@ -122,9 +125,6 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]]
 }
-
-
-
 
 -- *****************************************************************
 
@@ -238,7 +238,6 @@ WHERE m.color='%s' and level1.id IS NULL
 Group By m.continent;]]
 }
 
-
 -- *****************************************************************
 
 
@@ -348,8 +347,14 @@ LIMIT 100;]]
 -- END RIGHT JOIN QUERIES **
 
 
+-- END all join queries section
 -- *****************************************************************
 
+-- *****************************************************************
+-- Function section and mapping
+-- *****************************************************************
+
+-- Function to merge multiple tables into one
 function mergeMultiple(...)
     local result = {}
     local tables = {...}
@@ -365,7 +370,6 @@ end
 
 
 -- Merge all query maps
-
 local count = 0
 for key in pairs(left_queries) do
     count = count + 1
@@ -385,3 +389,4 @@ for key in pairs(query_map) do
 end
 print("Number of items ported in array:", count)
 
+-- *****************************************************************
