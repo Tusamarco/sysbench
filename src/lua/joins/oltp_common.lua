@@ -29,6 +29,9 @@ if sysbench.cmdline.command == nil then
             "cleanup, help")
 end
 
+require("joins/join_queries")
+
+
 -- Command line options
 sysbench.cmdline.options = {
    table_size =
@@ -45,7 +48,74 @@ sysbench.cmdline.options = {
       {"Report how many rows were inserted during the data preparation. If 0 [default] it is disable." .. 
       "If chunk_size_in_prepare is used, interval cannot be larger than the chunk_size_in_prepare dimension", 0},   
    simple_inner_pk =
-      {"Number of simple_inner joins by pk queries per transaction", 1},
+      {"Number of simple_inner joins by pk queries per transaction", 0},
+   simple_inner_pk_GB =
+      {"Number of simple_inner joins by pk queries with Group By per transaction", 0},
+   
+   -- options that govern the joins tests [START]
+   multilevel_inner_pk =
+      {"Number of multilevel_inner joins by pk queries per transaction", 0},  
+   simple_inner_index =
+      {"Number of simple_inner joins by index queries per transaction", 0},
+   simple_inner_index_GB =
+      {"Number of simple_inner joins by index queries with Group By per transaction", 0},
+   multilevel_inner_index =
+      {"Number of multilevel_inner joins by index queries per transaction", 0},
+   simple_inner_forcing_order_GB = 
+      {"Number of simple_inner joins by index queries with forcing order and Group By per transaction", 0},
+   multilevel_inner_forcing_order_index =
+      {"Number of multilevel_inner joins by index queries with forcing order per transaction", 0},
+   simple_inner_straight_GB =
+      {"Number of simple_inner joins by index queries with STRAIGHT_JOIN and Group By per transaction", 0},
+   multilevel_inner_straight_index =
+      {"Number of multilevel_inner joins by index queries with STRAIGHT_JOIN per transaction", 0},
+   simple_left_pk =
+      {"Number of simple_left joins by pk queries per transaction", 0},
+   simple_left_pk_GB =
+      {"Number of simple_left joins by pk queries with Group By per transaction", 0},
+   multi_left_pk =
+      {"Number of multilevel_left joins by pk queries per transaction", 0},
+   simple_left_index =
+      {"Number of simple_left joins by index queries per transaction", 0},
+   simple_left_index_GB =
+      {"Number of simple_left joins by index queries with Group By per transaction", 0},
+   multi_left_index =
+      {"Number of multilevel_left joins by index queries per transaction", 0},
+   simple_left_forcing_order_GB =
+      {"Number of simple_left joins by index queries with forcing order and Group By per transaction", 0},
+   multi_left_forcing_order_GB =
+      {"Number of multilevel_left joins by index queries with forcing order and Group By per transaction", 0},
+   simple_left_straight =
+      {"Number of simple_left joins by index queries with STRAIGHT_JOIN per transaction", 0},
+   multi_left_straight =
+      {"Number of multilevel_left joins by index queries with STRAIGHT_JOIN per transaction", 0},
+   simple_left_exclude =
+      {"Number of simple_left joins by index queries with exclude per transaction", 0},
+   simple_right_pk =
+      {"Number of simple_right joins by pk queries per transaction", 0},
+   simple_right_pk_GB =
+      {"Number of simple_right joins by pk queries with Group By per transaction", 0},
+   multi_right_pk =
+      {"Number of multilevel_right joins by pk queries per transaction", 0},
+   simple_right_index =
+      {"Number of simple_right joins by index queries per transaction", 0},
+   simple_right_index_GB =
+      {"Number of simple_right joins by index queries with Group By per transaction", 0},
+   multi_right_index =
+      {"Number of multilevel_right joins by index queries per transaction", 0},
+   simple_right_forcing_order_GB =
+      {"Number of simple_right joins by index queries with forcing order and Group By per transaction", 0},
+   multi_right_forcing_order_GB =
+      {"Number of multilevel_right joins by index queries with forcing order and Group By per transaction", 0},
+   simple_right_straight_GB =
+      {"Number of simple_right joins by index queries with STRAIGHT_JOIN and Group By per transaction", 0},
+   multi_right_straight =
+      {"Number of multilevel_right joins by index queries with STRAIGHT_JOIN per transaction", 0},
+
+
+
+   -- options that govern the joins tests [END]
+   
    delete_inserts =
       {"Number of DELETE/INSERT combination per transaction", 0},
    range_selects =
@@ -92,6 +162,7 @@ sysbench.cmdline.options = {
    debug_lua = 
       {"Enable debug messages during data preparation", 0}
 }
+
 
 -- Prepare the dataset. This command supports parallel execution, i.e. will
 -- benefit from executing with --threads > 1 as long as --tables > 1
@@ -789,6 +860,15 @@ function getRandomValue(csvString)
     return values[math.random(1, #values)]
 end
 
+-- Function to split a comma-separated string into a table of values
+function split_comma_separated_string(inputString)
+    local result = {}
+    for value in inputString:gmatch("([^,]+)") do
+        table.insert(result, value:match("^%s*(.-)%s*$"))
+    end
+    return result
+end
+
 function prepare_begin()
    stmt.begin = con:prepare("BEGIN")
 end
@@ -926,54 +1006,33 @@ function commit()
    stmt.commit:execute()
 end
 
-function execute_simple_inner_pk()
+-- *****************************************************************
+-- Functions to execute the JOINS
+
+
+-- Generic join executor
+function execute_joins(join_name)
    local tnum = get_table_num()
    local i
 
-   for i = 1, sysbench.opt.simple_inner_pk do
-   query = "SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1 \
-FROM %s%u as m  \
-INNER JOIN level1 ON m.l1_id = level1.id and level1.record_status = '".. get_record_status() .. "' \
-WHERE m.continent = '".. get_continent() .. "' \
-GROUP BY m.continent, m.year_field, m.enum_field \
-ORDER BY m.year_field DESC, cc DESC, cs DESC \
-LIMIT 10;"
---      param[tnum].simple_inner_pk[1]:set(get_continent())
---      param[tnum].simple_inner_pk[2]:set(get_record_status())
-
---      stmt[tnum].simple_inner_pk:execute()
-      con:query(string.format(query, sysbench.opt.table_name, tnum))
+   if not join_name:find("exclude") then
+      for i = 1, sysbench.opt[join_name] do
+         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_continent())
+         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
+         con:query(query)
+      end
+   else
+      for i = 1, sysbench.opt[join_name] do
+         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_color())
+         -- print("DEBUG JOIN QUERY B: " .. query .." Join Name: " .. join_name)
+         con:query(query)
+      end
    end
 end
 
-local function execute_range(key)
-   local tnum = get_table_num()
+-- *****************************************************************
 
-   for i = 1, sysbench.opt[key] do
-      local id = get_id()
 
-      param[tnum][key][1]:set(id)
-      param[tnum][key][2]:set(id + sysbench.opt.range_size - 1)
-
-      stmt[tnum][key]:execute()
-   end
-end
-
-function execute_simple_ranges()
-   execute_range("simple_ranges")
-end
-
-function execute_sum_ranges()
-   execute_range("sum_ranges")
-end
-
-function execute_order_ranges()
-   execute_range("order_ranges")
-end
-
-function execute_distinct_ranges()
-   execute_range("distinct_ranges")
-end
 
 function execute_index_updates()
    local tnum = get_table_num()

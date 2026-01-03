@@ -21,27 +21,44 @@
 
 require("joins/oltp_common")
 
+local joins = {}
+
 function prepare_statements()
    if not sysbench.opt.skip_trx then
       prepare_begin()
       prepare_commit()
    end
    
+   
+   -- Given the list of all joins identify which joins are enabled and add them to join list
+   for _, join_name in ipairs(all_joins) do
+      if sysbench.opt[join_name] and sysbench.opt[join_name] ~= 0 then
+         print(sysbench.opt[join_name] .. " of join enabled: " .. join_name) --- IGNORE ---
+         table.insert(joins, join_name)
+      else
+          print("Join not enabled: " .. join_name) --- IGNORE ---
+      end
+   end
+   local count = 0
+   for _ in pairs(joins) do
+      count = count + 1
+   end
+   print("Number of items in map after filtering:", count)
 
-   -- if sysbench.opt.simple_inner_pk then
-   --     prepare_simple_inner_pk()
-   -- end
-
+   
 end
 
 function event()
    if not sysbench.opt.skip_trx then
       begin()
    end
-   if sysbench.opt.simple_inner_pk then
-      execute_simple_inner_pk()
-   end
-   
+
+  -- Execute enabled join queries
+  for _, join_name in ipairs(joins) do
+      execute_joins(join_name)
+  end
+
+
    if not sysbench.opt.skip_trx then
       commit()
    end
