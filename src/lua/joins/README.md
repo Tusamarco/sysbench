@@ -214,7 +214,19 @@ The function `load_global_variables()` sets up the `INSERT` statements used to p
 * **`all_joins` Generation**: The script iterates through the merged map, strips the `_query` suffix from the keys, and creates a flat list of test names (`all_joins`). This list is typically used by the benchmark runner to pick tests to execute.
 
 ## Usage Example
-### Prepare 
+For valid results, you should test only **one join type at a time**. Running multiple types together can "pollute" the data, as the tests may interfere with each other.
+
+I also recommend running tests based on a **fixed number of events** (e.g., "Time to finish 1,000 queries") rather than a fixed time limit (e.g., "Queries per minute"). This metric makes it much easier to spot which specific join types are performing poorly so you can investigate further.
+
+### Prepare/Cleanup/Warmup
+```bash
+sysbench /opt/sysbench/src/lua/joins/oltp_read_write.lua  --mysql-host=<ip> --mysql-port=<port> --mysql-user=<user> --mysql-password=<pw> --mysql-db=joins --db-driver=mysql  --skip_trx=off --report-interval=1  --histogram --table_name=main  --stats_format=csv --tables=5 --table_size=100000 --threads=5 --time=0  --events=50 prepare/cleanup/warmup
+```
+### Run
+```bash
+sysbench /opt/sysbench/src/lua/joins/oltp_read_write.lua  --mysql-host=<ip> --mysql-port=<port> --mysql-user=<user> --mysql-password=<pw> --mysql-db=joins --db-driver=mysql  --skip_trx=off --report-interval=1  --histogram --table_name=main  --stats_format=csv --tables=5 --table_size=100000 --threads=5 --time=0 --simple_inner_pk_GB=1 --multilevel_inner_pk=1 --events=500 run
+```
+
 
 
 
@@ -222,6 +234,7 @@ The function `load_global_variables()` sets up the `INSERT` statements used to p
 
 Copyright (C) 2006-present Marco Tusa.
 Distributed under the **GNU General Public License v2**.
+
 
 
 
