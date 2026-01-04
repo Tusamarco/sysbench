@@ -33,17 +33,17 @@ function prepare_statements()
    -- Given the list of all joins identify which joins are enabled and add them to join list
    for _, join_name in ipairs(all_joins) do
       if sysbench.opt[join_name] and sysbench.opt[join_name] ~= 0 then
-         print(sysbench.opt[join_name] .. " of join enabled: " .. join_name) --- IGNORE ---
+         -- print(sysbench.opt[join_name] .. " of join enabled: " .. join_name) --- IGNORE ---
          table.insert(joins, join_name)
-      else
-          print("Join not enabled: " .. join_name) --- IGNORE ---
+      -- else
+      --     print("Join not enabled: " .. join_name) --- IGNORE ---
       end
    end
    local count = 0
    for _ in pairs(joins) do
       count = count + 1
    end
-   print("Number of items in map after filtering:", count)
+   -- print("Number of items in map after filtering:", count)
 
    
 end
@@ -55,7 +55,9 @@ function event()
 
   -- Execute enabled join queries
   for _, join_name in ipairs(joins) do
-      execute_joins(join_name)
+       if not (join_name:find("update") or join_name:find("insert") or join_name:find("delete")) then
+         execute_joins(join_name)
+       end
   end
 
 

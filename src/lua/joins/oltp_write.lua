@@ -19,17 +19,31 @@
 -- Read/Write OLTP benchmark
 -- ----------------------------------------------------------------------
 
-require("windmills/oltp_common")
+require("joins/oltp_common")
+
+local joins={}
 
 function prepare_statements()
    if not sysbench.opt.skip_trx then
       prepare_begin()
       prepare_commit()
    end
+   -- Given the list of all joins identify which joins are enabled and add them to join list
+   for _, join_name in ipairs(all_joins) do
+      if sysbench.opt[join_name] and sysbench.opt[join_name] ~= 0 then
+         -- print(sysbench.opt[join_name] .. " of join enabled: " .. join_name) --- IGNORE ---
+         table.insert(joins, join_name)
+      -- else
+      --     print("Join not enabled: " .. join_name) --- IGNORE ---
+      end
+   end
+   local count = 0
+   for _ in pairs(joins) do
+      count = count + 1
+   end
+   -- print("Number of items in map after filtering:", count)
 
-   prepare_index_updates()
-   prepare_non_index_updates()
-   prepare_delete_inserts()
+
 end
 
 function event()
@@ -38,8 +52,15 @@ function event()
       begin()
    end
    execute_index_updates()
-   execute_non_index_updates()
    execute_delete_inserts()
+
+   for _, join_name in ipairs(joins) do
+      if join_name:find("update") or join_name:find("insert") or join_name:find("delete") then
+         print("Debug: Executing write join: " .. join_name) --- IGNORE ---
+         execute_joins(join_name)
+      end
+   end
+
 
    if not sysbench.opt.skip_trx then
       commit()

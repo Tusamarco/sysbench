@@ -17,6 +17,19 @@
 -- -----------------------------------------------------------------------------
 -- Common code for join queries
 -- -----------------------------------------------------------------------------
+function load_global_variables()
+-- GLOBAL VARIABLES
+   query_main_pre_auto_global = "INSERT INTO %s%u(l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field,color, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, enum_field, set_field, is_active) VALUES"
+
+   query_main_pre_global = "INSERT INTO %s%u(id, l1_id, l2_id, l3_id, l4_id, l5_id, small_number, integer_number, myvalue, decimal_number, float_number,  char_field, varchar_field, color, continent, uuid, uuid_bin, text_field, datetime_field, timestamp_field, year_field, binary_field, varbinary_field, enum_field, set_field, is_active) VALUES"
+
+   query_level_pre_auto_global = "INSERT INTO %s%u(continent, parent_id, time_accessed, l1_id, l2_id, l3_id, l4_id, l5_id, record_name, record_code, record_value, record_status, record_priority) VALUES"
+   query_level_pre_global = "INSERT INTO %s%u(id, continent, parent_id, time_accessed, l1_id, l2_id, l3_id, l4_id, l5_id, record_name, record_code, record_value, record_status, record_priority) VALUES"
+
+-- END GLOBAL VARIABLES
+end
+
+
 
 
 -- Join SQL code and mappings
@@ -566,7 +579,7 @@ local count = 0
 for key in pairs(left_queries) do
     count = count + 1
 end
-print("Number of items in map:", count)
+-- print("Debug: Number of items in map:", count)
 
 query_map = mergeMultiple(inner_queries, left_queries, right_queries, subquery_queries, semi_anti_condition_queries, insert_update_delete_queries)
 
@@ -579,6 +592,6 @@ for key in pairs(query_map) do
     table.insert(all_joins, base_name)
     count = count + 1
 end
-print("Number of items ported in array:", count)
+-- print("Debug: Number of items ported in array:", count)
 
 -- *****************************************************************
