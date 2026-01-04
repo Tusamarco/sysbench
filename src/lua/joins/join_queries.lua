@@ -347,6 +347,198 @@ LIMIT 100;]]
 -- END RIGHT JOIN QUERIES **
 
 
+-- Join with a subquery
+subquery_queries = {
+ ["inner_subquery_multi_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs, 
+    SUM(l1.record_value) AS l1,
+    SUM(l2.record_value) AS l2,
+    SUM(l3.record_value) AS l3,
+    SUM(l4.record_value) AS l4,
+    SUM(l5.record_value) AS l5
+FROM 
+    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m
+    INNER JOIN (SELECT id,l2_id,record_value FROM level1) AS l1 ON m.l1_id = l1.id
+    INNER JOIN level2 AS l2 ON l1.l2_id = l2.id
+    INNER JOIN level3 AS l3 ON l2.l3_id = l3.id
+    INNER JOIN level4 AS l4 ON l3.l4_id = l4.id
+    INNER JOIN level5 AS l5 ON l4.l5_id = l5.id
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]],
+
+["left_subquery_multi_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs, 
+    SUM(l1.record_value) AS l1,
+    SUM(l2.record_value) AS l2,
+    SUM(l3.record_value) AS l3,
+    SUM(l4.record_value) AS l4,
+    SUM(l5.record_value) AS l5
+FROM 
+    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m
+    LEFT JOIN (SELECT id,l2_id,record_value FROM level1) AS l1 ON m.l1_id = l1.id
+    LEFT JOIN level2 AS l2 ON l1.l2_id = l2.id
+    LEFT JOIN level3 AS l3 ON l2.l3_id = l3.id
+    LEFT JOIN level4 AS l4 ON l3.l4_id = l4.id
+    LEFT JOIN level5 AS l5 ON l4.l5_id = l5.id
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]],
+
+["right_subquery_multi_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs, 
+    SUM(l1.record_value) AS l1,
+    SUM(l2.record_value) AS l2,
+    SUM(l3.record_value) AS l3,
+    SUM(l4.record_value) AS l4,
+    SUM(l5.record_value) AS l5
+FROM 
+    level5 AS l5 
+    RIGHT JOIN level4 AS l4 ON l5.l4_id = l4.id
+    RIGHT JOIN level3 AS l3 ON l4.l3_id = l3.id
+    RIGHT JOIN level2 AS l2 ON l3.l2_id = l2.id
+    RIGHT JOIN level1 AS l1 ON l2.l1_id = l1.id
+    RIGHT JOIN (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m ON l1.parent_id = m.l1_id
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]]
+}
+
+semi_anti_condition_queries = {
+ ["semi_join_exists_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs
+FROM %s%u m
+WHERE EXISTS (
+    SELECT record_value
+    FROM level1 l1 
+    WHERE l1.id = m.l1_id
+    AND l1.record_status = '%s'
+) 
+AND m.continent = '%s'
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]],
+
+["anti_join_not_exists_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs
+FROM %s%u m
+WHERE NOT EXISTS (
+    SELECT record_value
+    FROM level1 l1 
+    WHERE l1.id = m.l1_id
+    AND l1.record_status = '%s'
+) 
+AND m.continent = '%s'
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]],
+
+["anti_join_left_join_pk_query"] = [[SELECT 
+    m.continent, 
+    COUNT(m.continent) AS cc,
+    m.year_field,
+    COUNT(m.year_field) AS cy, 
+    m.enum_field, 
+    COUNT(m.enum_field) AS cs
+FROM %s%u m
+LEFT JOIN level1 l ON m.l1_id = l.id AND m.enum_field = '%s'
+WHERE l.id IS NULL
+AND m.continent = '%s'
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC
+LIMIT 100;]],
+
+["conditional_join_pk_query"] = [[SELECT 
+     m.continent, 
+     COUNT(m.continent) AS cc,
+     m.year_field,
+     COUNT(m.year_field) AS cy, 
+     m.enum_field, 
+     COUNT(m.enum_field) AS cs,
+     SUM(CASE WHEN l.record_status = 'active' THEN 1 ELSE 0 END) AS l1,
+     COUNT(l.record_status) AS cl1,
+     SUM(CASE WHEN l.record_status = 'active' THEN 1 ELSE 0 END)/COUNT(l.record_status) AS percentage
+FROM %s%u m
+LEFT JOIN level1 l ON m.l1_id = l.id 
+WHERE m.continent = '%s' AND m.enum_field = '%s'
+GROUP BY m.continent, m.year_field, m.enum_field
+ORDER BY m.year_field DESC, cc DESC, cs DESC;]]
+}
+
+insert_update_delete_queries = {
+ ["update_multi_right_join_pk_query"] = [[UPDATE %s 
+JOIN (
+SELECT 
+%s.id AS match_id,
+SUM(level1.record_value) AS sum_l1
+     FROM level5     
+     RIGHT JOIN level4 ON level5.l4_id = level4.id AND level4.record_status = '%s'     
+     RIGHT JOIN level3 ON level4.l3_id = level3.id AND level3.record_status = '%s'
+     RIGHT JOIN level2 ON level3.l2_id = level2.id AND level2.record_status = '%s'
+     RIGHT JOIN level1 ON level2.l1_id = level1.id AND level1.record_status = '%s'
+     RIGHT JOIN %s ON %s.l1_id = level1.parent_id
+     WHERE %s.continent = '%s' AND level5.record_priority > 9
+ GROUP BY %s.id ) AS calculated_data 
+ ON %s.id = calculated_data.match_id 
+ SET %s.myvalue = calculated_data.sum_l1;]],
+  ["update_multi_left_join_pk_query"] = [[UPDATE %s 
+JOIN (
+SELECT 
+%s.id AS match_id,
+SUM(level1.record_value) AS sum_l1
+     FROM %s     
+     LEFT JOIN level1 ON %s.l1_id = level1.id
+     LEFT JOIN level2 ON level1.l2_id = level2.id AND level1.record_status = '%s'
+     LEFT JOIN level3 ON level2.l3_id = level3.id AND level2.record_status = '%s'
+     LEFT JOIN level4 ON level3.l4_id = level4.id AND level3.record_status = '%s'
+     LEFT JOIN level5 ON level4.l5_id = level5.id AND level4.record_status = '%s'     
+ WHERE %s.continent = '%s' AND level5.record_priority > 9
+ GROUP BY %s.id ) AS calculated_data 
+ ON %s.id = calculated_data.match_id 
+ SET %s.myvalue = calculated_data.sum_l1;]],
+ 
+ ["update_multi_inner_join_pk_query"] = [[UPDATE %s 
+JOIN (
+SELECT 
+%s.id AS match_id,
+SUM(level1.record_value) AS sum_l1
+     FROM %s     
+     INNER JOIN level1 ON %s.l1_id = level1.id
+     INNER JOIN level2 ON level1.l2_id = level2.id AND level1.record_status = '%s'
+     INNER JOIN level3 ON level2.l3_id = level3.id AND level2.record_status = '%s'
+     INNER JOIN level4 ON level3.l4_id = level4.id AND level3.record_status = '%s'
+     INNER JOIN level5 ON level4.l5_id = level5.id AND level4.record_status = '%s'     
+ WHERE %s.continent = '%s' AND level5.record_priority > 9
+ GROUP BY %s.id ) AS calculated_data 
+ ON %s.id = calculated_data.match_id 
+ SET %s.myvalue = calculated_data.sum_l1;]]
+}
+
 -- END all join queries section
 -- *****************************************************************
 
@@ -376,7 +568,7 @@ for key in pairs(left_queries) do
 end
 print("Number of items in map:", count)
 
-query_map = mergeMultiple(inner_queries, left_queries, right_queries)
+query_map = mergeMultiple(inner_queries, left_queries, right_queries, subquery_queries, semi_anti_condition_queries, insert_update_delete_queries)
 
 -- Extract the names and remove "_query" suffix while adding to the all_joins list
 all_joins = {}

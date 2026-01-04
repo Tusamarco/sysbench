@@ -111,6 +111,29 @@ sysbench.cmdline.options = {
       {"Number of simple_right joins by index queries with STRAIGHT_JOIN and Group By per transaction", 0},
    multi_right_straight =
       {"Number of multilevel_right joins by index queries with STRAIGHT_JOIN per transaction", 0},
+   inner_subquery_multi_pk =
+      {"Number of inner_subquery joins by multi pk queries per transaction", 0},
+   left_subquery_multi_pk =
+      {"Number of left_subquery joins by multi pk queries per transaction", 0},
+   right_subquery_multi_pk =
+      {"Number of right_subquery joins by multi pk queries per transaction", 0},
+   semi_join_exists_pk =
+      {"Number of semi_join_exists joins by pk queries per transaction", 0},
+   anti_join_not_exists_pk =
+      {"Number of anti_join_not_exists joins by pk queries per transaction", 0},
+   anti_join_left_join_pk =
+      {"Number of anti_join_left_join joins by pk queries per transaction", 0},
+   conditional_join_pk =
+      {"Number of conditional_join joins by pk queries per transaction", 0},
+   update_multi_right_join_pk =
+      {"Number of update_multi_right_join by pk queries per transaction", 0},
+   update_multi_left_join_pk =
+      {"Number of update_multi_left_join by pk queries per transaction", 0},
+   update_multi_inner_join_pk =
+      {"Number of update_multi_inner_join by pk queries per transaction", 0},
+
+
+
 
 
 
@@ -1012,27 +1035,73 @@ end
 
 -- Generic join executor
 function execute_joins(join_name)
-   local tnum = get_table_num()
    local i
 
-   if not join_name:find("exclude") then
+   if join_name:find("exclude") then
       for i = 1, sysbench.opt[join_name] do
-         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_continent())
-         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
-         con:query(query)
-      end
-   else
-      for i = 1, sysbench.opt[join_name] do
+         local tnum = get_table_num()
          query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_color())
          -- print("DEBUG JOIN QUERY B: " .. query .." Join Name: " .. join_name)
+         con:query(query)
+      end
+   elseif join_name:find("update_multi") then
+      for i = 1, sysbench.opt[join_name] do
+         query = get_update_multi(join_name)
+         print("DEBUG JOIN QUERY A: " .. query .." Join Name: " .. join_name)
+         con:query(query)
+      end   
+   else
+      for i = 1, sysbench.opt[join_name] do
+         local tnum = get_table_num()
+         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_continent())
+         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
          con:query(query)
       end
    end
 end
 
 -- *****************************************************************
+-- Function to get the multi update query for different types of multi updates
+function get_update_multi(join_name)
+   local query = ""
+   local tnum = get_table_num()
+   local table_name = sysbench.opt.table_name .. tnum
 
-
+   if join_name:find("update_multi_right_join_pk") then
+       query = string.format(query_map[join_name .. "_query"],
+         table_name, 
+         table_name, 
+         get_record_status(),
+         get_record_status(),
+         get_record_status(),
+         get_record_status(),
+         table_name,
+         table_name,
+         table_name,
+         get_continent(),
+         table_name,
+         table_name,
+         table_name
+         )
+   else 
+      query = string.format(query_map[join_name .. "_query"],
+         table_name,
+         table_name,
+         table_name,
+         table_name,
+         get_record_status(),
+         get_record_status(),
+         get_record_status(),
+         get_record_status(),
+         table_name,
+         get_continent(),
+         table_name,
+         table_name,
+         table_name
+         )
+      end
+   return query
+end
 
 function execute_index_updates()
    local tnum = get_table_num()
