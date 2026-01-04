@@ -68,6 +68,81 @@ To understand the queries, one must understand the underlying data model implied
 | record_priority | int                                 | NO   | MUL | NULL              |                                               |
 +-----------------+-------------------------------------+------+-----+-------------------+-----------------------------------------------+
 ```
+
+## Configuration Parameters
+
+This module provides fine-grained control over which join patterns are executed during the benchmark.
+
+### **Important: Default Behavior**
+
+**By default, all test parameters are set to `0` (Disabled).**
+
+To activate a specific test scenario, you must explicitly set its parameter to a **valid integer greater than 0**. This number represents the **frequency** of that query type per transaction.
+
+> **Example:**
+> Setting `simple_inner_pk=1` and `multilevel_inner_pk=5` means that for every single transaction loop in the benchmark, the script will execute the "Simple Inner Join" query **once** and the "Multilevel Inner Join" query **5 times**.
+
+### Parameter Reference
+
+#### 1. Inner Join Tests
+
+Standard intersection tests.
+
+* `simple_inner_pk`: Simple join via Primary Key.
+* `simple_inner_pk_GB`: Simple join via PK with `GROUP BY`.
+* `multilevel_inner_pk`: Multi-table join via PK.
+* `simple_inner_index`: Simple join via Secondary Index.
+* `simple_inner_index_GB`: Simple join via Index with `GROUP BY`.
+* `multilevel_inner_index`: Multi-table join via Index.
+* `simple_inner_forcing_order_GB`: Force join order (Optimizer Hint) + `GROUP BY`.
+* `multilevel_inner_forcing_order_index`: Force join order on multi-level index join.
+* `simple_inner_straight_GB`: Use `STRAIGHT_JOIN` + `GROUP BY`.
+* `multilevel_inner_straight_index`: Use `STRAIGHT_JOIN` on multi-level.
+
+#### 2. Left Join Tests
+
+Left outer join tests (retrieving all left rows).
+
+* `simple_left_pk` / `simple_left_pk_GB`: Single-level via PK.
+* `multi_left_pk`: Multi-level via PK.
+* `simple_left_index` / `simple_left_index_GB`: Single-level via Index.
+* `multi_left_index`: Multi-level via Index.
+* `simple_left_forcing_order_GB`: Force join order + `GROUP BY`.
+* `multi_left_forcing_order_GB`: Multi-level force join order + `GROUP BY`.
+* `simple_left_straight` / `multi_left_straight`: `STRAIGHT_JOIN` variants.
+* `simple_left_exclude`: "Exclusion" join (checking for `IS NULL` on the right side).
+
+#### 3. Right Join Tests
+
+Right outer join tests (retrieving all right rows).
+
+* `simple_right_pk` / `simple_right_pk_GB`: Single-level via PK.
+* `multi_right_pk`: Multi-level via PK.
+* `simple_right_index` / `simple_right_index_GB`: Single-level via Index.
+* `multi_right_index`: Multi-level via Index.
+* `simple_right_forcing_order_GB` / `multi_right_forcing_order_GB`: Force join order variants.
+* `simple_right_straight_GB` / `multi_right_straight`: `STRAIGHT_JOIN` variants.
+
+#### 4. Advanced Logic (Subqueries, Semi/Anti Joins)
+
+* `inner_subquery_multi_pk`: Join involving a subquery in the `FROM` clause (Inner).
+* `left_subquery_multi_pk`: Join involving a subquery (Left).
+* `right_subquery_multi_pk`: Join involving a subquery (Right).
+* `semi_join_exists_pk`: Uses `WHERE EXISTS`.
+* `anti_join_not_exists_pk`: Uses `WHERE NOT EXISTS`.
+* `anti_join_left_join_pk`: Exclusion pattern using Left Join + `IS NULL`.
+* `conditional_join_pk`: Conditional aggregation (e.g., `CASE WHEN`).
+
+#### 5. Write Operations (Updates/Deletes)
+
+* `update_multi_right_join_pk`: Update based on a multi-level Right Join calculation.
+* `update_multi_left_join_pk`: Update based on a multi-level Left Join calculation.
+* `update_multi_inner_join_pk`: Update based on a multi-level Inner Join calculation.
+* `delete_inserts`: DELETE followed by INSERT per transaction.
+* `index_updates`: Standard index-based UPDATE statements.
+
+---
+
 ## query_map Configuration
 
 The script organizes queries into specific Lua tables based on their SQL logic. These tables are eventually merged into a master `query_map`.
@@ -139,10 +214,14 @@ The function `load_global_variables()` sets up the `INSERT` statements used to p
 * **`all_joins` Generation**: The script iterates through the merged map, strips the `_query` suffix from the keys, and creates a flat list of test names (`all_joins`). This list is typically used by the benchmark runner to pick tests to execute.
 
 ## Usage Example
+### Prepare 
+
+
 
 ## License
 
 Copyright (C) 2006-present Marco Tusa.
 Distributed under the **GNU General Public License v2**.
+
 
 
