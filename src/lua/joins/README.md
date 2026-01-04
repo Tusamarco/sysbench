@@ -14,7 +14,7 @@ To understand the queries, one must understand the underlying data model implied
 * `level2` connects to `level1`, and so on up to `level5`.
 * These tables contain metrics (`record_value`) and status flags (`record_status`).
 
-*** Main Table definition: ***
+### Main Table definition: 
 ```sql
 +-----------------+----------------------------------------+------+-----+-------------------+-------------------+
 | Field           | Type                                   | Null | Key | Default           | Extra             |
@@ -47,7 +47,7 @@ To understand the queries, one must understand the underlying data model implied
 | is_active       | tinyint(1)                             | YES  |     | 1                 |                   |
 +-----------------+----------------------------------------+------+-----+-------------------+-------------------+
 ```
-*** Table Level definition: *** 
+### Table Level definition: 
 ```
 +-----------------+-------------------------------------+------+-----+-------------------+-----------------------------------------------+
 | Field           | Type                                | Null | Key | Default           | Extra                                         |
@@ -144,4 +144,5 @@ The function `load_global_variables()` sets up the `INSERT` statements used to p
 
 Copyright (C) 2006-present Marco Tusa.
 Distributed under the **GNU General Public License v2**.
+
 
