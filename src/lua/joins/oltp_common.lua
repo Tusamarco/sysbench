@@ -48,7 +48,7 @@ sysbench.cmdline.options = {
       {"Report how many rows were inserted during the data preparation. If 0 [default] it is disable." .. 
       "If chunk_size_in_prepare is used, interval cannot be larger than the chunk_size_in_prepare dimension", 0},   
    -- options that govern the joins tests [START]
-      simple_inner_pk =
+   simple_inner_pk =
       {"Number of simple_inner joins by pk queries per transaction", 0},
    simple_inner_pk_GB =
       {"Number of simple_inner joins by pk queries with Group By per transaction", 0},
@@ -130,6 +130,8 @@ sysbench.cmdline.options = {
       {"Number of update_multi_left_join by pk queries per transaction", 0},
    update_multi_inner_join_pk =
       {"Number of update_multi_inner_join by pk queries per transaction", 0},
+   join_levels =
+      {"[PLACE HOLDER THIS IS NOT ACTIVE YET] Number of levels to use in the joins tests (from 1 to 5)", 5},
   -- options that govern the joins tests [END]
    delete_inserts =
       {"Number of DELETE/INSERT combination per transaction", 0},
