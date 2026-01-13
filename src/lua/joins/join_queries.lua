@@ -119,7 +119,7 @@ LIMIT 100;]],
     ["simple_inner_straight_GB_query"] = [[SELECT STRAIGHT_JOIN m.continent, count(m.continent) cc,
 year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
 FROM level1
-INNER JOIN %s%u ON m.id = level1.parent_id and level1.record_status = '%s'
+INNER JOIN %s%u as m ON m.id = level1.parent_id and level1.record_status = '%s'
 WHERE m.continent = '%s'
 GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
@@ -128,7 +128,7 @@ LIMIT 100;]],
     ["multilevel_inner_straight_index_query"] = [[SELECT STRAIGHT_JOIN m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs,
 SUM(level1.record_value) l1,SUM(level2.record_value) l2,SUM(level3.record_value) l3,SUM(level3.record_value) l3,SUM(level4.record_value) l4,SUM(level5.record_value) l5
 FROM level1
-INNER JOIN %s%u ON m.id = level1.parent_id and level1.record_status = '%s'
+INNER JOIN %s%u as m ON m.id = level1.parent_id and level1.record_status = '%s'
 INNER JOIN level2 ON m.id = level2.parent_id
 INNER JOIN level3 ON m.id = level3.parent_id
 INNER JOIN level4 ON m.id = level4.parent_id
