@@ -94,7 +94,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["simple_inner_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level1,main1) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
+    ["simple_inner_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level1,%s%u) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
 FROM %s%u as m
 INNER JOIN level1 ON m.id = level1.parent_id and level1.record_status = '%s'
 WHERE m.continent = '%s'
@@ -102,7 +102,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["multilevel_inner_forcing_order_index_query"] = [[SELECT /*+ JOIN_ORDER(level2,level3,level4,level5,main1,level1) */ m.continent, count(m.continent) cc,
+    ["multilevel_inner_forcing_order_index_query"] = [[SELECT /*+ JOIN_ORDER(level2,level3,level4,level5,%s%u,level1) */ m.continent, count(m.continent) cc,
 year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1,
 SUM(level2.record_value) l2,SUM(level3.record_value) l3,SUM(level3.record_value) l3,SUM(level4.record_value) l4,SUM(level5.record_value) l5
 FROM %s%u as m
@@ -201,7 +201,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["simple_left_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level1,main1) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
+    ["simple_left_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level1,%s%u) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
 FROM %s%u as m
 LEFT JOIN level1 ON m.id = level1.parent_id and m.enum_field = '%s'
 WHERE m.continent = '%s'
@@ -209,7 +209,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["multi_left_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level2,main1,level1,level3,level4,level5) */ m.continent, count(m.continent) cc,year_field,
+    ["multi_left_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(level2,%s%u,level1,level3,level4,level5) */ m.continent, count(m.continent) cc,year_field,
 count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1,SUM(level2.record_value) l2,
 SUM(level3.record_value) l3,SUM(level3.record_value) l3,SUM(level4.record_value) l4,SUM(level5.record_value) l5
 FROM %s%u as m
@@ -225,7 +225,7 @@ LIMIT 100;]],
     
     ["simple_left_straight_query"] = [[SELECT STRAIGHT_JOIN m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
 FROM level1
-LEFT JOIN main1 ON m.id = level1.parent_id and m.enum_field = '%s'
+LEFT JOIN %s%u as m ON m.id = level1.parent_id and m.enum_field = '%s'
 WHERE m.continent = '%s'
 GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
@@ -235,7 +235,7 @@ LIMIT 100;]],
 SUM(level1.record_value) l1,SUM(level2.record_value) l2,SUM(level3.record_value) l3,SUM(level3.record_value) l3,
 SUM(level4.record_value) l4,SUM(level5.record_value) l5
 FROM level2
-LEFT JOIN main1 ON m.id = level2.parent_id and m.enum_field = '%s'
+LEFT JOIN %s%u as m ON m.id = level2.parent_id and m.enum_field = '%s'
 LEFT JOIN level1 ON m.id = level1.parent_id
 LEFT JOIN level3 ON m.id = level3.parent_id
 LEFT JOIN level4 ON m.id = level4.parent_id
@@ -313,7 +313,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["simple_right_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(main1,level1) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
+    ["simple_right_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(%s%u,level1) */ m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
 FROM level1
 RIGHT JOIN %s%u as m ON m.id = level1.parent_id and m.enum_field = '%s'
 WHERE level1.continent = '%s'
@@ -321,7 +321,7 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["multi_right_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(main1,level1,level2,level3,level4,level5) */ m.continent, count(m.continent) cc,year_field,
+    ["multi_right_forcing_order_GB_query"] = [[SELECT /*+ JOIN_ORDER(%s%u,level1,level2,level3,level4,level5) */ m.continent, count(m.continent) cc,year_field,
 count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1,SUM(level2.record_value) l2,
 SUM(level3.record_value) l3,SUM(level3.record_value) l3,SUM(level4.record_value) l4,SUM(level5.record_value) l5
 FROM level5

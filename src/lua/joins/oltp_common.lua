@@ -910,6 +910,12 @@ function execute_joins(join_name)
          -- print("DEBUG JOIN QUERY B: " .. query .." Join Name: " .. join_name)
          con:query(query)
       end
+   elseif join_name:find("forcing_order") then
+         local tnum = get_table_num()
+         local tablename = sysbench.opt.table_name .. tnum
+         query = string.format(query_map[join_name .. "_query"], tablename, tablename, get_record_status(), get_continent())
+         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
+         con:query(query)
    elseif join_name:find("update_multi") then
       for i = 1, sysbench.opt[join_name] do
          query = get_update_multi(join_name)
