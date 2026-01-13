@@ -785,7 +785,7 @@ end
 
 -- Function to get a random value from a comma-separated string
 function getRandomValue(csvString)
-    -- Split the comma-separated string
+    -- 1. Split the comma-separated string
     local values = {}
     for value in csvString:gmatch("([^,]+)") do
         table.insert(values, value:match("^%s*(.-)%s*$"))
@@ -795,14 +795,62 @@ function getRandomValue(csvString)
         return nil
     end
     
-    -- Better random seeding (only once at program start)
+    -- 2. BETTER SEEDING STRATEGY
+    -- We only seed if we haven't done so, OR if we want to ensure uniqueness every time.
+    -- For parallel processing, it is safer to re-seed or ensure the global _randomSeeded 
+    -- is actually unique per thread/process.
     if not _randomSeeded then
-        math.randomseed(os.time() * 1000)
+        -- Get the system time
+        local time = os.time()
+        
+        -- Get the high-precision CPU time
+        local cpu_time = os.clock()
+        
+        -- Get the memory address of a new table (returns something like "table: 0x12345")
+        -- We extract the hex code and convert it to a number.
+        local str_address = tostring({})
+        local address_num = 0
+        
+        -- Extract the hex part (handling different Lua versions)
+        local hex = str_address:match("0x(%x+)")
+        if hex then
+            address_num = tonumber(hex, 16)
+        else
+            -- Fallback if tostring doesn't result in hex
+            address_num = math.random(1, 10000) 
+        end
+        
+        -- Combine time + cpu + memory address for a high-entropy seed
+        math.randomseed(time + cpu_time + address_num)
+        
+        -- "Pop" a few random numbers to warm up the generator state
+        math.random(); math.random(); math.random()
+        
         _randomSeeded = true
     end
     
     return values[math.random(1, #values)]
 end
+
+-- function getRandomValue(csvString)
+--     -- Split the comma-separated string
+--     local values = {}
+--     for value in csvString:gmatch("([^,]+)") do
+--         table.insert(values, value:match("^%s*(.-)%s*$"))
+--     end
+    
+--     if #values == 0 then
+--         return nil
+--     end
+    
+--     -- Better random seeding (only once at program start)
+--     if not _randomSeeded then
+--         math.randomseed(os.time() * 1000)
+--         _randomSeeded = true
+--     end
+    
+--     return values[math.random(1, #values)]
+-- end
 
 -- Function to split a comma-separated string into a table of values
 function split_comma_separated_string(inputString)
