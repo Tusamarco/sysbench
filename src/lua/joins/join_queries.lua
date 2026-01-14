@@ -69,7 +69,7 @@ LIMIT 100;]],
 FROM %s%u as m
 INNER JOIN level1 ON m.id = level1.parent_id and level1.record_status = '%s'
 WHERE m.continent = '%s'
-ORDER BY m.year_field DESC, cc DESC, cs DESC
+ORDER BY m.year_field DESC, l1 DESC
 LIMIT 100;]],
     
     ["simple_inner_index_GB_query"] = [[SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
@@ -147,7 +147,7 @@ left_queries = {
 FROM %s%u as m
 LEFT JOIN level1 ON m.l1_id = level1.id and m.enum_field = '%s'
 WHERE m.continent = '%s'
-ORDER BY m.year_field DESC, cc DESC, cs DESC
+ORDER BY m.year_field DESC, l1 DESC
 LIMIT 100;]],
     
     ["simple_left_pk_GB_query"] = [[SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
@@ -176,7 +176,7 @@ LIMIT 100;]],
 FROM %s%u as m
 LEFT JOIN level1 ON m.id = level1.parent_id and m.enum_field = '%s'
 WHERE m.continent = '%s'
-ORDER BY m.year_field DESC, cc DESC, cs DESC
+ORDER BY m.year_field DESC, l1 DESC
 LIMIT 100;]],
     
     ["simple_left_index_GB_query"] = [[SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
@@ -261,7 +261,7 @@ right_queries = {
 FROM level1
 RIGHT JOIN %s%u as m ON m.l1_id = level1.id AND m.enum_field = '%s'
 WHERE level1.continent = '%s'
-ORDER BY m.year_field DESC, cc DESC, cs DESC
+ORDER BY m.year_field DESC, l1 DESC
 LIMIT 100;]],
     
     ["simple_right_pk_GB_query"] = [[SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
@@ -289,7 +289,7 @@ LIMIT 100;]],
 FROM level1
 RIGHT JOIN %s%u as m ON m.id = level1.parent_id and m.enum_field = '%s'
 WHERE level1.continent = '%s'
-ORDER BY m.year_field DESC, cc DESC, cs DESC
+ORDER BY m.year_field DESC, l1 DESC
 LIMIT 100;]],
     
     ["simple_right_index_GB_query"] = [[SELECT m.continent, count(m.continent) cc,year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1
