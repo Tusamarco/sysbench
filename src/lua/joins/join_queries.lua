@@ -102,10 +102,10 @@ GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]],
     
-    ["multilevel_inner_forcing_order_index_query"] = [[SELECT /*+ JOIN_ORDER(level2,level3,level4,level5,%s%u,level1) */ m.continent, count(m.continent) cc,
+    ["multilevel_inner_forcing_order_index_query"] = [[SELECT /*+ JOIN_ORDER(level2,level3,level4,level5,%s,level1) */ m.continent, count(m.continent) cc,
 year_field,count(year_field) cy, m.enum_field, count(m.enum_field) cs, SUM(level1.record_value) l1,
 SUM(level2.record_value) l2,SUM(level3.record_value) l3,SUM(level3.record_value) l3,SUM(level4.record_value) l4,SUM(level5.record_value) l5
-FROM %s%u as m
+FROM %s as m
 INNER JOIN level1 ON m.id = level1.parent_id and level1.record_status = '%s'
 INNER JOIN level2 ON m.id = level2.parent_id
 INNER JOIN level3 ON m.id = level3.parent_id
@@ -375,7 +375,7 @@ subquery_queries = {
     SUM(l4.record_value) AS l4,
     SUM(l5.record_value) AS l5
 FROM 
-    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m
+    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE enum_field = '%s' AND continent = '%s') AS m
     INNER JOIN (SELECT id,l2_id,record_value FROM level1) AS l1 ON m.l1_id = l1.id
     INNER JOIN level2 AS l2 ON l1.l2_id = l2.id
     INNER JOIN level3 AS l3 ON l2.l3_id = l3.id
@@ -398,7 +398,7 @@ LIMIT 100;]],
     SUM(l4.record_value) AS l4,
     SUM(l5.record_value) AS l5
 FROM 
-    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m
+    (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE enum_field = '%s' AND continent = '%s') AS m
     LEFT JOIN (SELECT id,l2_id,record_value FROM level1) AS l1 ON m.l1_id = l1.id
     LEFT JOIN level2 AS l2 ON l1.l2_id = l2.id
     LEFT JOIN level3 AS l3 ON l2.l3_id = l3.id
@@ -426,7 +426,7 @@ FROM
     RIGHT JOIN level3 AS l3 ON l4.l3_id = l3.id
     RIGHT JOIN level2 AS l2 ON l3.l2_id = l2.id
     RIGHT JOIN level1 AS l1 ON l2.l1_id = l1.id
-    RIGHT JOIN (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE continent = '%s' and enum_field = '%s') AS m ON l1.parent_id = m.l1_id
+    RIGHT JOIN (SELECT l1_id,continent,year_field,enum_field FROM %s%u WHERE enum_field = '%s' AND continent = '%s') AS m ON l1.parent_id = m.l1_id
 GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC
 LIMIT 100;]]
