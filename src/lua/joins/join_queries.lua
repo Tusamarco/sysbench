@@ -498,7 +498,7 @@ LIMIT 100;]],
      SUM(CASE WHEN l.record_status = 'active' THEN 1 ELSE 0 END)/COUNT(l.record_status) AS percentage
 FROM %s%u m
 LEFT JOIN level1 l ON m.l1_id = l.id 
-WHERE m.continent = '%s' AND m.enum_field = '%s'
+WHERE m.enum_field = '%s' AND m.continent = '%s'
 GROUP BY m.continent, m.year_field, m.enum_field
 ORDER BY m.year_field DESC, cc DESC, cs DESC;]]
 }
