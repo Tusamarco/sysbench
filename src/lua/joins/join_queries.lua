@@ -29,6 +29,119 @@ function load_global_variables()
 -- END GLOBAL VARIABLES
 end
 
+-- *****************************************************************
+-- Table definitions
+-- *****************************************************************
+main_table = [[   
+      CREATE TABLE `%s%d` (
+      `id` %s,
+      l1_id INT,           -- Foreign key to level1.id
+      l2_id INT,           -- Foreign key to level2.id
+      l3_id INT,           -- Foreign key to level3.id
+      l4_id INT,           -- Foreign key to level4.id
+      l5_id INT,           -- Foreign key to level5.id
+      
+      -- Numeric data types
+      small_number SMALLINT,
+      integer_number INT,
+      myvalue BIGINT,
+      decimal_number DECIMAL(10, 2),
+      float_number FLOAT,
+
+      -- String data types
+      char_field CHAR(10),
+      varchar_field VARCHAR(255),
+      color VARCHAR(50),
+      continent VARCHAR(255),
+      uuid VARCHAR(36) CHARACTER SET latin1,
+      uuid_bin BINARY(16),
+      text_field TEXT,
+      
+      -- Date and time data types
+      datetime_field DATETIME,
+      timestamp_field TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      year_field YEAR,
+      
+      -- Binary data types
+      binary_field BINARY(50),
+      varbinary_field VARBINARY(255),
+      
+      -- Special data types
+      enum_field ENUM('active', 'inactive', 'pending'),
+      set_field SET('read', 'write', 'execute', 'delete'),
+      
+      -- Boolean type
+      is_active BOOLEAN DEFAULT TRUE,
+      
+      -- Spatial data type (if using GIS)
+      -- point_field POINT,
+      
+      -- Constraints
+      UNIQUE KEY unique_varchar (uuid),
+      INDEX idx_l1_id (l1_id),
+      INDEX idx_l2_id (l2_id),
+      INDEX idx_l3_id (l3_id),
+      INDEX idx_l4_id (l4_id),
+      INDEX idx_l5_id (l5_id),
+      INDEX idx_date (datetime_field),
+      INDEX idx_time (timestamp_field),
+      INDEX idx_enum_field (enum_field),
+      INDEX idx_set_field (set_field),
+      INDEX idx_year_field (year_field),
+      INDEX comp_attributes(continent,enum_field,set_field),
+      INDEX comp_color(color,continent,enum_field,year_field)
+      
+      -- Foreign key constraints (commented out - enable as needed)
+      -- FOREIGN KEY (l1_id) REFERENCES level1(id),
+      -- FOREIGN KEY (l2_id) REFERENCES level2(id),
+      -- FOREIGN KEY (l3_id) REFERENCES level3(id),
+      -- FOREIGN KEY (l4_id) REFERENCES level4(id),
+      -- FOREIGN KEY (l5_id) REFERENCES level5(id),
+      
+      -- CONSTRAINT chk_numbers CHECK (small_number >= 0)
+) %s, %s]]
+
+
+
+level_table = [[   
+      CREATE TABLE `%s%d` (
+      `id` %s,
+      continent VARCHAR(45) NOT NULL,
+      parent_id BIGINT,  -- For hierarchical structure if needed
+      time_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      l1_id INT,
+      l2_id INT,
+      l3_id INT,
+      l4_id INT,
+      l5_id INT,    
+      record_name CHAR(36),
+      record_code CHAR(5),
+      record_value BIGINT,
+      record_status ENUM('active', 'inactive', 'pending'),
+      record_priority INT NOT NULL,
+      INDEX idx_country (continent),
+      INDEX idx_parent_id (parent_id),
+      INDEX idx_l1_id (l1_id),
+      INDEX idx_l2_id (l2_id),
+      INDEX idx_l3_id (l3_id),
+      INDEX idx_l4_id (l4_id),
+      INDEX idx_l5_id (l5_id),
+      INDEX idx_time_accessed (time_accessed),
+      INDEX idx_record_status (record_status),
+      INDEX idx_record_priority (record_priority),
+      INDEX comp_record_continent_status_priority(continent,record_status,record_priority)
+
+      
+      -- Foreign key constraints (commented - enable when tables exist)
+      -- FOREIGN KEY (parent_id) REFERENCES level1(id) ON DELETE CASCADE,
+      -- FOREIGN KEY (l2_id) REFERENCES level2(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l3_id) REFERENCES level3(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l4_id) REFERENCES level4(id) ON DELETE SET NULL,
+      -- FOREIGN KEY (l5_id) REFERENCES level5(id) ON DELETE SET NULL
+) %s, %s]]
+
+
+
 
 
 
@@ -581,6 +694,7 @@ for key in pairs(left_queries) do
 end
 -- print("Debug: Number of items in map:", count)
 
+-- Merging all query tables into a single query_map if you have created your own map just modify the line below
 query_map = mergeMultiple(inner_queries, left_queries, right_queries, subquery_queries, semi_anti_condition_queries, insert_update_delete_queries)
 
 -- Extract the names and remove "_query" suffix while adding to the all_joins list
