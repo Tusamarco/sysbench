@@ -94,6 +94,9 @@ sysbench.cmdline.options = {
    {"Add specific table instructions like charset and ROW format", " CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=DYNAMIC "},
    table_name=
    {"Specify a table name instead sbtest", "sbtest"},
+   number_of_continents=
+   {"You can specify how many continents to use from the list: Asia,Africa,Antarctica,Europe,North America,Oceania,South America,Atlantis. " .. 
+     "Default is 7 so all except Atlantis", 7},
    stats_format=
    {"Specify how you want the statistics written [default=human (readable); csv; json] ", "human"},
    create_indexes_before_dataload =
@@ -331,13 +334,14 @@ function create_table(drv, con, table_num)
 --sysbench.opt.table_size
    con:bulk_insert_init(query_pre)
    query = ""
-
+   continents = sysbench.opt.number_of_continents
+     
    for i = start_row, end_row do
-
+       
       c_val = get_c_value()
       strrecordtype =  sysbench.rand.string("@@@")
       location =sysbench.rand.varstringalpha(5, 50)
-      continent =sysbench.rand.continent(7)
+      continent =sysbench.rand.continent(continents)
       active = sysbench.rand.default(0,65535)
       millid = sysbench.rand.default(1,400)
       kwatts_s = sysbench.rand.default(0,4000000)
@@ -703,10 +707,11 @@ function get_query_insert(id,tnum)
   local uuid = "UUID()"
   local date = "NOW()"
   
+  continents = sysbench.opt.number_of_continents
   millid = sysbench.rand.default(1,400)
   kwatts_s = sysbench.rand.default(0,4000000)
   location =sysbench.rand.varstringalpha(5, 50)
-  continent =sysbench.rand.continent(7)
+  continent =sysbench.rand.continent(continents)
   active = sysbench.rand.default(0,65535)
 --	(id,uuid,millid,kwatts_s,date,location,continent,active,strrecordtype)
   
