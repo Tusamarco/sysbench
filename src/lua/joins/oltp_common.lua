@@ -825,37 +825,31 @@ end
 -- *****************************************************************
 -- Functions to execute the JOINS
 
-
 -- Generic join executor
 function execute_joins(join_name)
    local i
 
-   if join_name:find("exclude") then
-      for i = 1, sysbench.opt[join_name] do
-         local tnum = get_table_num()
-         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_color())
-         -- print("DEBUG JOIN QUERY B: " .. query .." Join Name: " .. join_name)
-         con:query(query)
-      end
-   elseif join_name:find("forcing_order") then
-         local tnum = get_table_num()
-         local tablename = sysbench.opt.table_name .. tnum
+   for i = 1, sysbench.opt[join_name] do
+      local query
+      local tnum = get_table_num()
+      local tablename = sysbench.opt.table_name .. tnum
+
+      if join_name:find("exclude") then
+         query = string.format(query_map[join_name .. "_query"], tablename, get_record_status(), get_color())
+      
+      elseif join_name:find("forcing_order") then
+         local tablename = sysbench.opt.table_name .. get_table_num()
          query = string.format(query_map[join_name .. "_query"], tablename, tablename, get_record_status(), get_continent())
-         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
-         con:query(query)
-   elseif join_name:find("update_multi") then
-      for i = 1, sysbench.opt[join_name] do
+      
+      elseif join_name:find("update_multi") then
          query = get_update_multi(join_name)
-         -- print("DEBUG JOIN QUERY A: " .. query .." Join Name: " .. join_name)
-         con:query(query)
-      end   
-   else
-      for i = 1, sysbench.opt[join_name] do
-         local tnum = get_table_num()
-         query = string.format(query_map[join_name .. "_query"], sysbench.opt.table_name, tnum, get_record_status(), get_continent())
-         -- print("DEBUG JOIN QUERY : " .. query .." Join Name: " .. join_name)
-         con:query(query)
+      
+      else
+         query = string.format(query_map[join_name .. "_query"], tablename, get_record_status(), get_continent())
       end
+
+      -- print("DEBUG JOIN QUERY: " .. query .." Join Name: " .. join_name)
+      con:query(query)
    end
 end
 
@@ -903,10 +897,10 @@ function get_update_multi(join_name)
 end
 
 function execute_index_updates()
-    local tnum = get_table_num()
     local table_name = sysbench.opt.table_name
     local query_update = "update %s%u set varchar_field='%s' where color='%s' and continent='%s' and enum_field='%s' limit 10"
     for i = 1, sysbench.opt.index_updates do
+         local tnum = get_table_num()
          local new_varchar = sysbench.rand.varstringalpha(5, 255)
          local color = get_color()
          local continent = get_continent()
@@ -928,11 +922,11 @@ function execute_index_updates()
 
  
 function execute_delete_inserts()
-   local tnum = get_table_num()
    local table_name = sysbench.opt.table_name 
 
    for i = 1, sysbench.opt.delete_inserts do
       local id = get_id()
+      local tnum = get_table_num()
       local query_delete = string.format("DELETE FROM %s%u WHERE id=%d", table_name, tnum, id)
       
       local query_prefix= string.format(query_main_pre_global, table_name, tnum) 	 
