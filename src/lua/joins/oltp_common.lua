@@ -60,11 +60,11 @@ sysbench.cmdline.options = {
       {"Number of simple_inner joins by index queries with Group By per transaction", 0},
    multilevel_inner_index =
       {"Number of multilevel_inner joins by index queries per transaction", 0},
-   simple_inner_forcing_order_GB = 
+   simple_inner_forcing_order = 
       {"Number of simple_inner joins by index queries with forcing order and Group By per transaction", 0},
    multilevel_inner_forcing_order_index =
       {"Number of multilevel_inner joins by index queries with forcing order per transaction", 0},
-   simple_inner_straight_GB =
+   simple_inner_straight =
       {"Number of simple_inner joins by index queries with STRAIGHT_JOIN and Group By per transaction", 0},
    multilevel_inner_straight_index =
       {"Number of multilevel_inner joins by index queries with STRAIGHT_JOIN per transaction", 0},
@@ -80,9 +80,9 @@ sysbench.cmdline.options = {
       {"Number of simple_left joins by index queries with Group By per transaction", 0},
    multi_left_index =
       {"Number of multilevel_left joins by index queries per transaction", 0},
-   simple_left_forcing_order_GB =
+   simple_left_forcing_order =
       {"Number of simple_left joins by index queries with forcing order and Group By per transaction", 0},
-   multi_left_forcing_order_GB =
+   multi_left_forcing_order =
       {"Number of multilevel_left joins by index queries with forcing order and Group By per transaction", 0},
    simple_left_straight =
       {"Number of simple_left joins by index queries with STRAIGHT_JOIN per transaction", 0},
@@ -102,11 +102,11 @@ sysbench.cmdline.options = {
       {"Number of simple_right joins by index queries with Group By per transaction", 0},
    multi_right_index =
       {"Number of multilevel_right joins by index queries per transaction", 0},
-   simple_right_forcing_order_GB =
+   simple_right_forcing_order =
       {"Number of simple_right joins by index queries with forcing order and Group By per transaction", 0},
-   multi_right_forcing_order_GB =
+   multi_right_forcing_order =
       {"Number of multilevel_right joins by index queries with forcing order and Group By per transaction", 0},
-   simple_right_straight_GB =
+   simple_right_straight =
       {"Number of simple_right joins by index queries with STRAIGHT_JOIN and Group By per transaction", 0},
    multi_right_straight =
       {"Number of multilevel_right joins by index queries with STRAIGHT_JOIN per transaction", 0},
