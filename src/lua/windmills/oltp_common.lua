@@ -391,9 +391,7 @@ function create_table(drv, con, table_num)
             con:bulk_insert_done()
             con:query("COMMIT")
             print(string.format("Flushing chunk data for table '%s%d' inserted rows {%d}", sysbench.opt.table_name, table_num, i))
-            close_statements()
             con:reconnect()
-            prepare_statements()
             con:bulk_insert_init(query_pre)
          end
       end
